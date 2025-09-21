@@ -77,7 +77,7 @@ const runDeployment = (commitInfo) => {
     return new Promise((resolve, reject) => {
         log('🚀 Запускаем автоматический deployment...');
 
-        const deployScript = path.join(PROJECT_DIR, 'beauty-dev.sh');
+        const deployScript = '/root/beauty-dev.sh';
         const deployProcess = spawn('bash', [deployScript, 'deploy'], {
             cwd: PROJECT_DIR,
             stdio: ['ignore', 'pipe', 'pipe'],
