@@ -5,16 +5,16 @@
 
 set -e
 
-BACKUP_DIR="/root/beauty-platform/deployment/auto-restore/backups"
+BACKUP_DIR="/root/projects/beauty/deployment/auto-restore/backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LOG_FILE="/root/beauty-platform/logs/backup-system.log"
+LOG_FILE="/root/projects/beauty/logs/backup-system.log"
 
 # Создаем директории
 mkdir -p "$BACKUP_DIR/configs/$TIMESTAMP"
 mkdir -p "$BACKUP_DIR/ecosystem/$TIMESTAMP"
 mkdir -p "$BACKUP_DIR/env/$TIMESTAMP"
 mkdir -p "$BACKUP_DIR/packages/$TIMESTAMP"
-mkdir -p "/root/beauty-platform/logs"
+mkdir -p "/root/projects/beauty/logs"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
@@ -29,15 +29,15 @@ if [ -f "/root/ecosystem.config.js" ]; then
 fi
 
 # Find and backup all ecosystem files in services
-find /root/beauty-platform/services -name "ecosystem.config.js" -exec cp {} "$BACKUP_DIR/ecosystem/$TIMESTAMP/" \;
+find /root/projects/beauty/services -name "ecosystem.config.js" -exec cp {} "$BACKUP_DIR/ecosystem/$TIMESTAMP/" \;
 
 # 2. Backup environment files
 log "🔐 Backing up environment files..."
-cp /root/beauty-platform/.env "$BACKUP_DIR/env/$TIMESTAMP/" 2>/dev/null || true
-cp /root/beauty-platform/.env.production "$BACKUP_DIR/env/$TIMESTAMP/" 2>/dev/null || true
+cp /root/projects/beauty/.env "$BACKUP_DIR/env/$TIMESTAMP/" 2>/dev/null || true
+cp /root/projects/beauty/.env.production "$BACKUP_DIR/env/$TIMESTAMP/" 2>/dev/null || true
 
 # Backup service-specific env files
-for service_dir in /root/beauty-platform/services/*/; do
+for service_dir in /root/projects/beauty/services/*/; do
     if [ -d "$service_dir" ]; then
         service_name=$(basename "$service_dir")
         if [ -f "$service_dir/.env" ]; then
@@ -48,9 +48,9 @@ done
 
 # 3. Backup package.json files
 log "📋 Backing up package configurations..."
-cp /root/beauty-platform/package.json "$BACKUP_DIR/packages/$TIMESTAMP/root-package.json"
+cp /root/projects/beauty/package.json "$BACKUP_DIR/packages/$TIMESTAMP/root-package.json"
 
-for service_dir in /root/beauty-platform/services/*/; do
+for service_dir in /root/projects/beauty/services/*/; do
     if [ -d "$service_dir" ]; then
         service_name=$(basename "$service_dir")
         if [ -f "$service_dir/package.json" ]; then
@@ -59,7 +59,7 @@ for service_dir in /root/beauty-platform/services/*/; do
     fi
 done
 
-for app_dir in /root/beauty-platform/apps/*/; do
+for app_dir in /root/projects/beauty/apps/*/; do
     if [ -d "$app_dir" ]; then
         app_name=$(basename "$app_dir")
         if [ -f "$app_dir/package.json" ]; then

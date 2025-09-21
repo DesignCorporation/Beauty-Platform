@@ -5,8 +5,8 @@
 
 set -e
 
-SCRIPT_DIR="/root/beauty-platform/deployment/auto-restore"
-LOG_FILE="/root/beauty-platform/logs/auto-restore-test.log"
+SCRIPT_DIR="/root/projects/beauty/deployment/auto-restore"
+LOG_FILE="/root/projects/beauty/logs/auto-restore-test.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] TEST: $1" | tee -a "$LOG_FILE"

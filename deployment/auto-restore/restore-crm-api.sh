@@ -4,8 +4,8 @@
 
 set -e
 
-MANAGER_SCRIPT="/root/beauty-platform/deployment/auto-restore/smart-restore-manager.sh"
-LOG_FILE="/root/beauty-platform/logs/restore-crm-api.log"
+MANAGER_SCRIPT="/root/projects/beauty/deployment/auto-restore/smart-restore-manager.sh"
+LOG_FILE="/root/projects/beauty/logs/restore-crm-api.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] CRM_RESTORE: $1" | tee -a "$LOG_FILE"

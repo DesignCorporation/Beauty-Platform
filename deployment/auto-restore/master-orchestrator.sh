@@ -5,15 +5,15 @@
 
 set -e
 
-ENV_FILE="/root/beauty-platform/.env"
+ENV_FILE="/root/projects/beauty/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     . "$ENV_FILE"
     set +a
 fi
 
-SCRIPT_DIR="/root/beauty-platform/deployment/auto-restore"
-LOG_FILE="/root/beauty-platform/logs/master-orchestrator.log"
+SCRIPT_DIR="/root/projects/beauty/deployment/auto-restore"
+LOG_FILE="/root/projects/beauty/logs/master-orchestrator.log"
 RUN_DIR="$SCRIPT_DIR/run"
 PID_FILE="$RUN_DIR/beauty-auto-restore.pid"
 
@@ -57,8 +57,8 @@ initialize_system() {
     log "🚀 Initializing Beauty Platform Auto-Restore System"
     
     # Создаем необходимые директории
-    mkdir -p "/root/beauty-platform/logs"
-    mkdir -p "/root/beauty-platform/deployment/auto-restore/backups"
+    mkdir -p "/root/projects/beauty/logs"
+    mkdir -p "/root/projects/beauty/deployment/auto-restore/backups"
     
     # Делаем все скрипты исполняемыми
     chmod +x "$SCRIPT_DIR"/*.sh
@@ -109,9 +109,9 @@ setup_cron_jobs() {
     # Добавляем cron задачи
     (crontab -l 2>/dev/null || true; cat << 'EOF'
 # Beauty Platform Auto-Restore System
-*/30 * * * * /root/beauty-platform/deployment/auto-restore/backup-system.sh >/dev/null 2>&1
-0 6 * * * /root/beauty-platform/deployment/auto-restore/alert-system.sh daily-report >/dev/null 2>&1
-0 */6 * * * /root/beauty-platform/deployment/auto-restore/system-maintenance.sh >/dev/null 2>&1
+*/30 * * * * /root/projects/beauty/deployment/auto-restore/backup-system.sh >/dev/null 2>&1
+0 6 * * * /root/projects/beauty/deployment/auto-restore/alert-system.sh daily-report >/dev/null 2>&1
+0 */6 * * * /root/projects/beauty/deployment/auto-restore/system-maintenance.sh >/dev/null 2>&1
 EOF
     ) | crontab -
     

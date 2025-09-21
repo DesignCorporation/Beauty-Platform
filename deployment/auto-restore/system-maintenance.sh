@@ -5,7 +5,7 @@
 
 set -e
 
-LOG_FILE="/root/beauty-platform/logs/maintenance.log"
+LOG_FILE="/root/projects/beauty/logs/maintenance.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] MAINTENANCE: $1" | tee -a "$LOG_FILE"
@@ -15,11 +15,11 @@ log "🧹 Starting system maintenance..."
 
 # 1. Очистка старых логов
 log "📝 Cleaning up old logs..."
-find /root/beauty-platform/logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
-find /root/beauty-platform/logs -name "*.log.*" -mtime +3 -delete 2>/dev/null || true
+find /root/projects/beauty/logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
+find /root/projects/beauty/logs -name "*.log.*" -mtime +3 -delete 2>/dev/null || true
 
 # Ротация больших логов
-for logfile in /root/beauty-platform/logs/*.log; do
+for logfile in /root/projects/beauty/logs/*.log; do
     if [ -f "$logfile" ] && [ $(stat --format=%s "$logfile") -gt 104857600 ]; then # 100MB
         mv "$logfile" "$logfile.$(date +%Y%m%d_%H%M%S)"
         touch "$logfile"
@@ -53,7 +53,7 @@ if (( DISK_USAGE > 80 )); then
     fi
     
     # Очистка старых backups
-    find /root/beauty-platform/deployment/auto-restore/backups -type d -mtime +14 -exec rm -rf {} \; 2>/dev/null || true
+    find /root/projects/beauty/deployment/auto-restore/backups -type d -mtime +14 -exec rm -rf {} \; 2>/dev/null || true
 fi
 
 # 6. Проверка состояния процессов PM2
@@ -74,7 +74,7 @@ ntpdate -s time.nist.gov 2>/dev/null || timedatectl set-ntp true 2>/dev/null || 
 
 # 8. Создание snapshot текущего состояния
 log "📸 Creating system snapshot..."
-cat > "/root/beauty-platform/logs/maintenance-snapshot-$(date +%Y%m%d_%H%M%S).json" << EOF
+cat > "/root/projects/beauty/logs/maintenance-snapshot-$(date +%Y%m%d_%H%M%S).json" << EOF
 {
     "timestamp": "$(date -Iseconds)",
     "disk_usage": "${DISK_USAGE}%",

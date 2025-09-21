@@ -5,15 +5,15 @@
 
 set -e
 
-ENV_FILE="/root/beauty-platform/.env"
+ENV_FILE="/root/projects/beauty/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     . "$ENV_FILE"
     set +a
 fi
 
-ALERT_LOG="/root/beauty-platform/logs/alerts.log"
-CRITICAL_LOG="/root/beauty-platform/logs/critical-alerts.log"
+ALERT_LOG="/root/projects/beauty/logs/alerts.log"
+CRITICAL_LOG="/root/projects/beauty/logs/critical-alerts.log"
 WEBHOOK_URL="${WEBHOOK_URL:-}"  # Можно настроить Slack/Discord webhook
 EMAIL_RECIPIENTS="${EMAIL_RECIPIENTS:-admin@beauty-platform.com}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
@@ -195,7 +195,7 @@ Disk: $(df -h /)
 }
 
 generate_daily_report() {
-    local report_file="/root/beauty-platform/logs/daily-report-$(date +%Y%m%d).txt"
+    local report_file="/root/projects/beauty/logs/daily-report-$(date +%Y%m%d).txt"
     
     cat > "$report_file" << EOF
 Beauty Platform Daily Status Report
@@ -217,7 +217,7 @@ Disk: $(df -h /)
 Load: $(uptime)
 
 === LOG SIZES ===
-$(ls -lh /root/beauty-platform/logs/*.log 2>/dev/null | tail -10 || echo "No logs found")
+$(ls -lh /root/projects/beauty/logs/*.log 2>/dev/null | tail -10 || echo "No logs found")
 EOF
 
     log "📊 Daily report generated: $report_file"

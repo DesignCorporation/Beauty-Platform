@@ -5,8 +5,8 @@
 
 set -e
 
-SCRIPT_DIR="/root/beauty-platform/deployment/auto-restore"
-LOG_DIR="/root/beauty-platform/logs"
+SCRIPT_DIR="/root/projects/beauty/deployment/auto-restore"
+LOG_DIR="/root/projects/beauty/logs"
 
 show_header() {
     clear

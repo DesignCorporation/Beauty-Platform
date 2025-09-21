@@ -5,16 +5,16 @@
 
 set -e
 
-ENV_FILE="/root/beauty-platform/.env"
+ENV_FILE="/root/projects/beauty/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     . "$ENV_FILE"
     set +a
 fi
 
-MONITOR_LOG="/root/beauty-platform/logs/health-monitor.log"
-ALERT_LOG="/root/beauty-platform/logs/health-alerts.log"
-RUN_DIR="/root/beauty-platform/deployment/auto-restore/run"
+MONITOR_LOG="/root/projects/beauty/logs/health-monitor.log"
+ALERT_LOG="/root/projects/beauty/logs/health-alerts.log"
+RUN_DIR="/root/projects/beauty/deployment/auto-restore/run"
 PID_FILE="$RUN_DIR/beauty-health-monitor.pid"
 CHECK_INTERVAL=30  # Проверка каждые 30 секунд
 FAILURE_THRESHOLD=5  # Количество последовательных неудач перед восстановлением
@@ -120,25 +120,25 @@ trigger_service_restore() {
     
     case "$service" in
         "auth-service")
-            /root/beauty-platform/deployment/auto-restore/restore-auth-service.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-auth-service.sh &
             ;;
         "crm-api")
-            /root/beauty-platform/deployment/auto-restore/restore-crm-api.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-crm-api.sh &
             ;;
         "admin-panel")
-            /root/beauty-platform/deployment/auto-restore/restore-admin-panel.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-admin-panel.sh &
             ;;
         "salon-crm")
-            /root/beauty-platform/deployment/auto-restore/restore-salon-crm.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-salon-crm.sh &
             ;;
         "api-gateway")
-            /root/beauty-platform/deployment/auto-restore/restore-api-gateway.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-api-gateway.sh &
             ;;
         "mcp-server")
-            /root/beauty-platform/deployment/auto-restore/restore-mcp-server.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-mcp-server.sh &
             ;;
         "images-api")
-            /root/beauty-platform/deployment/auto-restore/restore-images-api.sh &
+            /root/projects/beauty/deployment/auto-restore/restore-images-api.sh &
             ;;
         *)
             alert "Unknown service for restore: $service"
@@ -149,7 +149,7 @@ trigger_service_restore() {
 }
 
 generate_status_report() {
-    local report_file="/root/beauty-platform/logs/health-status-$(date +%Y%m%d_%H%M%S).json"
+    local report_file="/root/projects/beauty/logs/health-status-$(date +%Y%m%d_%H%M%S).json"
     
     cat > "$report_file" << EOF
 {
@@ -247,7 +247,7 @@ main_monitoring_loop() {
 trap 'log "🛑 Health monitor stopped"; exit 0' SIGTERM SIGINT
 
 # Создаем директории для логов
-mkdir -p "/root/beauty-platform/logs"
+mkdir -p "/root/projects/beauty/logs"
 
 # Запускаем основной цикл мониторинга
 trap 'rm -f "$PID_FILE"; exit 0' SIGINT SIGTERM

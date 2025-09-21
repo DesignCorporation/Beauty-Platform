@@ -4,8 +4,8 @@
 
 set -e
 
-MANAGER_SCRIPT="/root/beauty-platform/deployment/auto-restore/smart-restore-manager.sh"
-LOG_FILE="/root/beauty-platform/logs/restore-notification-service.log"
+MANAGER_SCRIPT="/root/projects/beauty/deployment/auto-restore/smart-restore-manager.sh"
+LOG_FILE="/root/projects/beauty/logs/restore-notification-service.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] NOTIFICATION_RESTORE: $1" | tee -a "$LOG_FILE"

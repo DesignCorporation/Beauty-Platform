@@ -6,8 +6,8 @@
 
 set -e
 
-SCRIPT_DIR="/root/beauty-platform/deployment/auto-restore"
-LOG_DIR="/root/beauty-platform/logs/auto-restore"
+SCRIPT_DIR="/root/projects/beauty/deployment/auto-restore"
+LOG_DIR="/root/projects/beauty/logs/auto-restore"
 CONFIG_FILE="$SCRIPT_DIR/restore-config.json"
 PNPM_PATH="/root/.local/share/pnpm/pnpm"
 MAX_RESTARTS=3
@@ -310,7 +310,7 @@ safe_install_deps() {
     
     log_json "$service" "deps_install" "started" "Installing dependencies with pnpm"
     
-    cd /root/beauty-platform
+    cd /root/projects/beauty
     
     # Проверяем pnpm
     if [ ! -f "$PNPM_PATH" ]; then
@@ -433,19 +433,19 @@ restore_service() {
 
 # Конфигурация сервисов
 declare -A SERVICES
-SERVICES[landing-page]="6000:/root/beauty-platform/apps/landing-page:npm run dev"
-SERVICES[admin-panel]="6002:/root/beauty-platform/apps/admin-panel:npm run dev"
-SERVICES[salon-crm]="6001:/root/beauty-platform/apps/salon-crm:npm run dev"
-SERVICES[client-portal]="6003:/root/beauty-platform/apps/client-booking:npm run build && npm start"
-SERVICES[api-gateway]="6020:/root/beauty-platform/services/api-gateway:npm start"  
-SERVICES[auth-service]="6021:/root/beauty-platform/services/auth-service:ENABLE_TRACING=false MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b npx tsx src/server.ts"
-SERVICES[mcp-server]="6025:/root/beauty-platform/services/mcp-server:npm run dev"
-SERVICES[images-api]="6026:/root/beauty-platform/services/images-api:PORT=6026 node src/server.js"
-SERVICES[crm-api]="6022:/root/beauty-platform/services/crm-api:npm run dev"
-SERVICES[backup-service]="6027:/root/beauty-platform/services/backup-service:PORT=6027 node dist/server.js"
+SERVICES[landing-page]="6000:/root/projects/beauty/apps/landing-page:npm run dev"
+SERVICES[admin-panel]="6002:/root/projects/beauty/apps/admin-panel:npm run dev"
+SERVICES[salon-crm]="6001:/root/projects/beauty/apps/salon-crm:npm run dev"
+SERVICES[client-portal]="6003:/root/projects/beauty/apps/client-booking:npm run build && npm start"
+SERVICES[api-gateway]="6020:/root/projects/beauty/services/api-gateway:npm start"  
+SERVICES[auth-service]="6021:/root/projects/beauty/services/auth-service:ENABLE_TRACING=false MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b npx tsx src/server.ts"
+SERVICES[mcp-server]="6025:/root/projects/beauty/services/mcp-server:npm run dev"
+SERVICES[images-api]="6026:/root/projects/beauty/services/images-api:PORT=6026 node src/server.js"
+SERVICES[crm-api]="6022:/root/projects/beauty/services/crm-api:npm run dev"
+SERVICES[backup-service]="6027:/root/projects/beauty/services/backup-service:PORT=6027 node dist/server.js"
 SERVICES[postgresql]="6100:/var/lib/postgresql/16/main:systemctl start postgresql"
 SERVICES[context7]="6024:/root/context7:bun run dist/index.js --transport http --port 6024"
-SERVICES[notification-service]="6028:/root/beauty-platform/services/notification-service:pnpm run dev"
+SERVICES[notification-service]="6028:/root/projects/beauty/services/notification-service:pnpm run dev"
 
 # Функция управления
 case "${1:-help}" in
