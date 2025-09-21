@@ -1,0 +1,36 @@
+{
+    "timestamp": "2025-09-21T08:30:01+00:00",
+    "pm2_list": ,
+    "critical_services": {
+        "auth_service": {
+            "port": 6021,
+            "restarts": ,
+            "status": ""
+        },
+        "crm_api": {
+            "port": 6022,
+            "restarts": ,
+            "status": ""
+        },
+        "admin_panel": {
+            "port": 6002,
+            "restarts": ,
+            "status": ""
+        },
+        "api_gateway": {
+            "port": 6020,
+            "restarts": ,
+            "status": ""
+        },
+        "mcp_server": {
+            "port": 6025,
+            "restarts": ,
+            "status": ""
+        },
+        "images_api": {
+            "port": 6026,
+            "restarts": ,
+            "status": ""
+        }
+    }
+}

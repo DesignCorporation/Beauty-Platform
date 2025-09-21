@@ -1,0 +1,214 @@
+{
+  "common": {
+    "loading": "Ładowanie...",
+    "error": "Błąd",
+    "success": "Sukces",
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "add": "Dodaj",
+    "close": "Zamknij",
+    "yes": "Tak",
+    "no": "Nie",
+    "ok": "OK",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "previous": "Poprzedni",
+    "search": "Szukaj",
+    "filter": "Filtruj",
+    "clear": "Wyczyść",
+    "reset": "Resetuj",
+    "refresh": "Odśwież",
+    "open": "Otwórz",
+    "find": "Znajdź",
+    "active": "Aktywni",
+    "inactive": "Nieaktywni",
+    "noResults": "Brak wyników",
+    "tryDifferentFilters": "Spróbuj zmienić filtry wyszukiwania"
+  },
+  "app": {
+    "title": "Beauty CRM",
+    "subtitle": "Salon Piękności",
+    "adminProfile": "Administrator",
+    "adminEmail": "admin@salon.com"
+  },
+  "navigation": {
+    "dashboard": "Panel główny",
+    "calendar": "Kalendarz",
+    "services": "Usługi",
+    "clients": "Klienci",
+    "team": "Zespół",
+    "payments": "Płatności",
+    "analytics": "Analityka",
+    "settings": "Ustawienia",
+    "help": "Pomoc"
+  },
+  "dashboard": {
+    "welcome": "Witamy w Beauty CRM! 👋",
+    "subtitle": "Panel zarządzania salonem piękności",
+    "stats": {
+      "appointmentsToday": "Wizyty dzisiaj",
+      "activeClients": "Aktywni klienci",
+      "monthlyRevenue": "Przychód miesięczny",
+      "staffOccupancy": "Obłożenie personelu"
+    },
+    "quickActions": "Szybkie działania",
+    "quickActionsDescription": "Główne operacje systemu CRM",
+    "newAppointment": "Nowa wizyta",
+    "addClient": "Dodaj klienta",
+    "reportsAnalytics": "Raporty i analityka",
+    "clientSearch": "Wyszukiwanie klientów",
+    "clientSearchDescription": "Znajdź klienta po imieniu lub telefonie",
+    "clientSearchPlaceholder": "Wprowadź imię lub numer telefonu...",
+    "findClient": "Znajdź klienta",
+    "recentClients": "Ostatni klienci:"
+  },
+  "calendar": {
+    "title": "Kalendarz",
+    "subtitle": "Zarządzanie wizytami",
+    "monthNames": ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"],
+    "dayNames": ["Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"],
+    "dayNamesShort": ["Nie", "Pon", "Wto", "Śro", "Czw", "Pią", "Sob"],
+    "today": "Dzisiaj",
+    "newAppointment": "Nowa wizyta",
+    "noAppointments": "Brak wizyt na ten dzień"
+  },
+  "services": {
+    "title": "Usługi",
+    "subtitle": "Zarządzanie usługami salonu",
+    "addService": "Dodaj usługę",
+    "editService": "Edytuj usługę",
+    "deleteService": "Usuń usługę",
+    "serviceName": "Nazwa usługi",
+    "servicePrice": "Cena",
+    "serviceDuration": "Czas trwania",
+    "serviceDescription": "Opis",
+    "serviceCategory": "Kategoria"
+  },
+  "clients": {
+    "title": "Klienci",
+    "subtitle": "Zarządzanie bazą klientów",
+    "addClient": "Dodaj klienta",
+    "editClient": "Edytuj klienta",
+    "deleteClient": "Usuń klienta",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "Email",
+    "phone": "Telefon",
+    "address": "Adres",
+    "birthday": "Data urodzenia",
+    "notes": "Notatki",
+    "lastVisit": "Ostatnia wizyta",
+    "totalVisits": "Łączna liczba wizyt"
+  },
+  "team": {
+    "title": "Zespół",
+    "subtitle": "Zarządzanie personelem salonu",
+    "addEmployee": "Dodaj pracownika",
+    "inviteEmployee": "Zaproś",
+    "addMember": "Dodaj członka zespołu",
+    "editMember": "Edytuj członka zespołu",
+    "deleteMember": "Usuń członka zespołu",
+    "memberName": "Imię",
+    "memberRole": "Rola",
+    "memberEmail": "Email",
+    "memberPhone": "Telefon",
+    "memberSpecialty": "Specjalizacja",
+    "memberSchedule": "Harmonogram",
+    "search": "Szukaj pracowników...",
+    "filterByRole": "Filtruj według roli",
+    "filterByStatus": "Filtruj według statusu",
+    "allRoles": "Wszystkie role",
+    "allStatuses": "Wszystkie statusy",
+    "viewProfile": "Zobacz profil",
+    "editProfile": "Edytuj",
+    "deactivate": "Dezaktywuj",
+    "noEmployees": "Brak pracowników",
+    "noEmployeesDesc": "Dodaj pierwszego pracownika aby rozpocząć",
+    "roles": {
+      "SALON_OWNER": "Właściciel salonu",
+      "MANAGER": "Menedżer",
+      "STAFF_MEMBER": "Pracownik",
+      "RECEPTIONIST": "Recepcjonista",
+      "ACCOUNTANT": "Księgowy"
+    },
+    "reviews": "opinii",
+    "services": "Usług",
+    "years": "Lat",
+    "growth": "Wzrost",
+    "online": "Online",
+    "languages": "Języki",
+    "specialties": {
+      "hair": "Fryzjerstwo",
+      "nails": "Manicure",
+      "makeup": "Makijaż",
+      "massage": "Masaż",
+      "skincare": "Pielęgnacja skóry"
+    }
+  },
+  "payments": {
+    "title": "Płatności",
+    "subtitle": "Zarządzanie płatnościami i transakcjami",
+    "addPayment": "Dodaj płatność",
+    "paymentAmount": "Kwota",
+    "paymentMethod": "Metoda płatności",
+    "paymentDate": "Data",
+    "paymentStatus": "Status",
+    "client": "Klient",
+    "service": "Usługa",
+    "totalAmount": "Łączna kwota",
+    "paymentMethods": {
+      "cash": "Gotówka",
+      "card": "Karta",
+      "transfer": "Przelew bankowy"
+    },
+    "paymentStatuses": {
+      "paid": "Opłacone",
+      "pending": "Oczekujące",
+      "cancelled": "Anulowane"
+    }
+  },
+  "analytics": {
+    "title": "Analityka",
+    "subtitle": "Raporty i statystyki",
+    "revenue": "Przychody",
+    "appointments": "Wizyty",
+    "clients": "Klienci",
+    "services": "Usługi",
+    "dailyReport": "Raport dzienny",
+    "weeklyReport": "Raport tygodniowy",
+    "monthlyReport": "Raport miesięczny",
+    "yearlyReport": "Raport roczny"
+  },
+  "language": {
+    "title": "Język interfejsu",
+    "current": "Aktualny język",
+    "switch": "Zmień język",
+    "languages": {
+      "en": "Angielski",
+      "pl": "Polski",
+      "ua": "Ukraiński",
+      "ru": "Rosyjski"
+    }
+  },
+  "currency": {
+    "title": "Waluta",
+    "current": "Aktualna waluta",
+    "switch": "Zmień walutę",
+    "currencies": {
+      "USD": "Dolar amerykański",
+      "EUR": "Euro",
+      "PLN": "Złoty polski",
+      "UAH": "Hrywna ukraińska"
+    }
+  },
+  "messages": {
+    "confirmDelete": "Czy na pewno chcesz to usunąć?",
+    "deleteSuccess": "Pomyślnie usunięto",
+    "saveSuccess": "Zmiany zapisane",
+    "networkError": "Błąd sieci, sprawdź połączenie",
+    "serverError": "Błąd serwera, spróbuj później",
+    "validationError": "Sprawdź czy pola są wypełnione poprawnie"
+  }
+}

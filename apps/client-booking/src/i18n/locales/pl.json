@@ -1,0 +1,15 @@
+{
+  "welcome": "Welcome",
+  "login": "Login",
+  "register": "Register", 
+  "email": "Email",
+  "password": "Password",
+  "firstName": "First Name",
+  "lastName": "Last Name",
+  "phone": "Phone",
+  "dashboard": "Dashboard",
+  "bookings": "Bookings",
+  "favorites": "Favorites",
+  "profile": "Profile",
+  "logout": "Logout"
+}

@@ -1,0 +1,73 @@
+# BEAUTY PLATFORM - AUTH SERVICE PRODUCTION DOCKERFILE
+# Enterprise-grade container with security and stability focus
+
+FROM node:20-alpine AS builder
+
+# Security: create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S beauty -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files with exact versions
+COPY package*.json ./
+
+# Install dependencies with exact versions (no updates)
+RUN npm ci --only=production --frozen-lockfile
+
+# Copy application code
+COPY . .
+
+# Generate Prisma client with stable version
+RUN npx prisma generate
+
+# Build TypeScript
+RUN npm run build
+
+# ===========================================
+# PRODUCTION STAGE - Minimal attack surface
+# ===========================================
+
+FROM node:20-alpine AS production
+
+# Install security updates and curl for health checks
+RUN apk update && apk add --no-cache curl && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S beauty -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy only production files
+COPY --from=builder --chown=beauty:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=beauty:nodejs /app/dist ./dist
+COPY --from=builder --chown=beauty:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=beauty:nodejs /app/package*.json ./
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown beauty:nodejs /app/logs
+
+# Security: switch to non-root user
+USER beauty
+
+# Environment variables with secure defaults
+ENV NODE_ENV=production
+ENV PORT=6021
+ENV ENABLE_TRACING=false
+ENV PRISMA_ENGINE_PROTOCOL=json
+ENV PRISMA_TELEMETRY_DISABLED=true
+
+# Health check
+HEALTHCHECK --interval=15s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:6021/health || exit 1
+
+# Expose port
+EXPOSE 6021
+
+# Graceful shutdown handling
+STOPSIGNAL SIGTERM
+
+# Start application with proper logging
+CMD ["node", "dist/server.js"]

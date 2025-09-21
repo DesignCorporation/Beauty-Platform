@@ -1,0 +1,404 @@
+// Beauty Platform Database Schema
+// Domain-Driven Design + Multi-tenant Architecture
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// CORE ENTITIES - Business Domain
+// ========================================
+
+// User Roles - Расширенная система ролей
+enum UserRole {
+  SUPER_ADMIN      // Администратор всей платформы
+  SALON_OWNER      // Владелец салона
+  MANAGER          // Менеджер салона (между Owner и Staff)
+  STAFF_MEMBER     // Мастер
+  RECEPTIONIST     // Администратор ресепшена
+  ACCOUNTANT       // Бухгалтер салона
+  CLIENT           // Клиент салона
+}
+
+// Status для различных сущностей
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+  DELETED
+}
+
+// Language Support
+enum Language {
+  RU // Русский
+  EN // English
+  PL // Polski
+  UA // Українська
+}
+
+// Currency Support - включаем RUB временно для совместимости
+enum Currency {
+  USD // US Dollar
+  EUR // Euro
+  PLN // Польский злотый
+  UAH // Украинская гривна
+  RUB // Российский рубль (deprecated, но нужен для миграции)
+}
+
+// ========================================
+// TENANTS - Мультитенантность
+// ========================================
+
+model Tenant {
+  id          String   @id @default(cuid())
+  slug        String   @unique // URL slug для салона
+  name        String
+  description String?
+  
+  // Contact Info
+  email       String?
+  phone       String?
+  website     String?
+  
+  // Address
+  country     String?
+  city        String?
+  address     String?
+  postalCode  String?
+  
+  // Business Settings
+  currency    Currency @default(PLN)  // Стартуем с Польши
+  language    Language @default(RU)
+  timezone    String   @default("Europe/Moscow")
+  
+  // Status
+  status      EntityStatus @default(ACTIVE)
+  isActive    Boolean      @default(true)
+  
+  // Relationships
+  users       User[]
+  clients     Client[]
+  services    Service[]
+  appointments Appointment[]
+  invitations Invitation[]
+  userSalonAccess UserSalonAccess[]
+  
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("tenants")
+}
+
+// ========================================
+// USERS - Система пользователей
+// ========================================
+
+model User {
+  id        String   @id @default(cuid())
+  
+  // Tenant Isolation - КРИТИЧНО!
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  
+  // Auth Info
+  email     String   @unique
+  password  String   // bcrypt hash
+  
+  // Personal Info
+  firstName String
+  lastName  String
+  phone     String?
+  avatar    String?
+  
+  // Role & Permissions
+  role      UserRole @default(CLIENT)
+  
+  // Staff Settings (for staff members)
+  color     String?  // Personal color for calendar (hex)
+  isActive  Boolean  @default(true)
+  
+  // Status
+  status        EntityStatus @default(PENDING)
+  emailVerified Boolean      @default(false)
+  
+  // Auth Tokens
+  refreshTokens RefreshToken[]
+  
+  // MFA (Multi-Factor Authentication) - для SUPER_ADMIN
+  mfaEnabled    Boolean  @default(false)
+  mfaSecret     String?  // TOTP secret (encrypted)
+  mfaBackupCodes String? // JSON array of hashed backup codes
+  
+  // Relationships
+  createdAppointments  Appointment[] @relation("AppointmentCreatedBy")
+  assignedAppointments Appointment[] @relation("AppointmentAssignedTo")
+  sentInvitations      Invitation[]  @relation("InviterInvitations")
+  salonAccess          UserSalonAccess[]
+  
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users")
+}
+
+// JWT Refresh Tokens
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("refresh_tokens")
+}
+
+// ========================================
+// CLIENTS - Клиенты салонов
+// ========================================
+
+model Client {
+  id       String @id @default(cuid())
+  
+  // Tenant Isolation
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  
+  // Personal Info
+  name     String
+  email    String?
+  phone    String?
+  
+  // Additional Info
+  notes    String?
+  birthday DateTime?
+  
+  // Status
+  status   EntityStatus @default(ACTIVE)
+  
+  // Relationships
+  appointments Appointment[]
+  
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@map("clients")
+}
+
+// ========================================
+// SERVICES - Услуги салона
+// ========================================
+
+model Service {
+  id          String @id @default(cuid())
+  
+  // Tenant Isolation
+  tenantId    String
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  
+  // Service Info
+  name        String
+  description String?
+  duration    Int    // В минутах
+  price       Decimal @db.Decimal(10, 2)
+  
+  // Status
+  status      EntityStatus @default(ACTIVE)
+  
+  // Relationships
+  appointments Appointment[]
+  
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("services")
+}
+
+// ========================================
+// APPOINTMENTS - Записи
+// ========================================
+
+enum AppointmentStatus {
+  PENDING    // Ожидает подтверждения
+  CONFIRMED  // Подтверждена
+  IN_PROGRESS // В процессе
+  COMPLETED  // Завершена
+  CANCELLED  // Отменена
+  NO_SHOW    // Не пришел
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  appointmentNumber String          // Уникальный номер записи
+  
+  // Tenant Isolation
+  tenantId        String
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  
+  // Appointment Info
+  date            DateTime          // Дата записи
+  startTime       DateTime          // Время начала
+  endTime         DateTime          // Время окончания
+  
+  // Relationships
+  clientId        String
+  client          Client            @relation(fields: [clientId], references: [id])
+  
+  serviceId       String
+  service         Service           @relation(fields: [serviceId], references: [id])
+  
+  assignedToId    String?
+  assignedTo      User?             @relation("AppointmentAssignedTo", fields: [assignedToId], references: [id])
+  
+  // Status & Notes
+  status          AppointmentStatus @default(PENDING)
+  notes           String?
+  
+  // Audit Trail
+  createdById     String?
+  createdBy       User?             @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@unique([tenantId, appointmentNumber])
+  @@map("appointments")
+}
+
+// ========================================
+// STAFF INVITATION SYSTEM
+// ========================================
+
+// Статусы приглашений
+enum InviteStatus {
+  PENDING   // Отправлено, ждем ответа
+  ACCEPTED  // Принято мастером
+  DECLINED  // Отклонено мастером
+  EXPIRED   // Истек срок действия
+  REVOKED   // Отозвано владельцем салона
+}
+
+// Приглашения для мастеров
+model Invitation {
+  id              String   @id @default(cuid())
+  
+  // Салон, который приглашает
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  inviterUserId   String   // Кто отправил приглашение
+  inviter         User     @relation("InviterInvitations", fields: [inviterUserId], references: [id])
+  
+  // Данные приглашаемого мастера
+  masterEmail     String
+  masterPhone     String?
+  masterName      String
+  personalMessage String?  // Личное сообщение от владельца
+  
+  // Настройки доступа
+  role            UserRole @default(STAFF_MEMBER)
+  permissions     String[] @default(["calendar.view", "appointments.manage"])
+  
+  // Статус и токены
+  status          InviteStatus @default(PENDING)
+  token           String   @unique @default(cuid())
+  expiresAt       DateTime // Срок действия (7 дней)
+  
+  // Связь с созданным доступом
+  userSalonAccess UserSalonAccess[]
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  sentAt          DateTime?
+  acceptedAt      DateTime?
+  declinedAt      DateTime?
+  
+  @@map("invitations")
+}
+
+// Связь мастер-салон (многие-ко-многим)
+model UserSalonAccess {
+  id            String   @id @default(cuid())
+  
+  // Связи
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  
+  // Права и роли
+  role          UserRole
+  permissions   String[] // Детальные разрешения
+  isOwner       Boolean  @default(false)  // Владелец салона
+  isActive      Boolean  @default(true)   // Активный сотрудник
+  
+  // Связь с приглашением
+  invitationId  String?  // Ссылка на исходное приглашение
+  invitation    Invitation? @relation(fields: [invitationId], references: [id])
+  
+  // Настройки работы
+  priority      Int      @default(1)      // Приоритет салона (1 = основной)
+  canSeeFinances Boolean @default(false)  // Доступ к финансам
+  workingHours  Json?    // Рабочие часы в данном салоне
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  lastActiveAt  DateTime @default(now())
+  
+  @@unique([userId, tenantId])
+  @@map("user_salon_access")
+}
+
+// ========================================
+// AUDIT & LOGGING
+// ========================================
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  
+  // Tenant Context
+  tenantId    String?
+  
+  // Action Info
+  action      AuditAction
+  entityType  String      // "User", "Appointment", etc.
+  entityId    String?     // ID сущности
+  
+  // User Context
+  userId      String?
+  userRole    UserRole?
+  
+  // Changes
+  oldValues   Json?       // Старые значения
+  newValues   Json?       // Новые значения
+  
+  // Technical Info
+  ipAddress   String?
+  userAgent   String?
+  
+  // Timestamp
+  createdAt   DateTime    @default(now())
+  
+  @@map("audit_logs")
+}

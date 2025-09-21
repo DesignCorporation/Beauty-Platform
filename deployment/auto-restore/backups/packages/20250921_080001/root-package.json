@@ -1,0 +1,66 @@
+{
+  "name": "@beauty-platform/monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Beauty Platform - Enterprise SaaS for beauty salons",
+  "packageManager": "pnpm@9.14.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter @beauty/auth-service dev\" \"pnpm --filter @beauty/salon-crm dev\" \"pnpm --filter @beauty/client-booking dev\"",
+    "build": "pnpm build:core && pnpm build:services && pnpm build:apps",
+    "build:core": "pnpm --filter \"@beauty/core\" build",
+    "build:services": "pnpm --filter \"@beauty/*-service\" build",
+    "build:apps": "pnpm --filter \"@beauty/*-{crm,panel,booking,websites}\" build",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm --recursive test",
+    "test:e2e": "pnpm --recursive test:e2e",
+    "clean": "pnpm --recursive run clean",
+    "dev:core": "pnpm --filter @beauty/core dev",
+    "dev:services": "pnpm --filter \"@beauty/*-service\" dev",
+    "dev:apps": "pnpm --filter \"@beauty/*-{crm,panel,booking,websites}\" dev",
+    "ai": "./tools/gemini-cli/beauty-ai.sh",
+    "ai:setup": "./tools/gemini-cli/setup.sh",
+    "ai:test": "./tools/gemini-cli/test-commands.sh",
+    "ai:docs": "./tools/gemini-cli/generate-docs.sh",
+    "ai:review": "./tools/gemini-cli/code-review.sh",
+    "ai:refactor": "./tools/gemini-cli/refactor-assistant.sh",
+    "ai:interactive": "cd /root/beauty-platform && gemini"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^9.15.0",
+    "prettier": "^3.3.3",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.7.2",
+    "vitest": "^2.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^18.3.0",
+      "@types/react-dom": "^18.3.0",
+      "@types/node": "20.19.10"
+    }
+  },
+  "keywords": [
+    "beauty",
+    "salon",
+    "crm",
+    "booking",
+    "saas",
+    "multi-tenant"
+  ],
+  "author": "DesignCorp",
+  "license": "UNLICENSED"
+}

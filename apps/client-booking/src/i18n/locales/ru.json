@@ -1,0 +1,15 @@
+{
+  "welcome": "Добро пожаловать",
+  "login": "Войти",
+  "register": "Регистрация",
+  "email": "Email",
+  "password": "Пароль",
+  "firstName": "Имя",
+  "lastName": "Фамилия",
+  "phone": "Телефон",
+  "dashboard": "Панель управления",
+  "bookings": "Записи",
+  "favorites": "Избранное",
+  "profile": "Профиль",
+  "logout": "Выйти"
+}

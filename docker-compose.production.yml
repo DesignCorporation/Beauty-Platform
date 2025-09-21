@@ -1,0 +1,326 @@
+version: '3.8'
+
+# BEAUTY PLATFORM - ENTERPRISE PRODUCTION ARCHITECTURE
+# Multi-instance services with load balancing, health checks, and auto-recovery
+
+networks:
+  beauty-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres-data:
+  redis-data:
+  pgbouncer-config:
+
+services:
+  # ===========================================
+  # DATABASE LAYER - Connection Pooling + HA
+  # ===========================================
+  
+  postgres-primary:
+    image: postgres:16-alpine
+    container_name: beauty-postgres-primary
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: beauty_platform_new
+      POSTGRES_USER: beauty_platform_user
+      POSTGRES_PASSWORD: beauty_platform_2025
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.1.10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beauty_platform_user -d beauty_platform_new"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "5432:5432"
+
+  pgbouncer:
+    image: pgbouncer/pgbouncer:latest
+    container_name: beauty-pgbouncer
+    restart: unless-stopped
+    environment:
+      DATABASES_HOST: postgres-primary
+      DATABASES_PORT: 5432
+      DATABASES_USER: beauty_platform_user
+      DATABASES_PASSWORD: beauty_platform_2025
+      DATABASES_DBNAME: beauty_platform_new
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+      SERVER_LIFETIME: 3600
+      SERVER_IDLE_TIMEOUT: 600
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.1.11
+    healthcheck:
+      test: ["CMD", "psql", "-h", "127.0.0.1", "-p", "5432", "-U", "beauty_platform_user", "-d", "beauty_platform_new", "-c", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "6432:5432"  # PgBouncer port
+
+  # ===========================================
+  # REDIS - Session Store + Caching
+  # ===========================================
+  
+  redis:
+    image: redis:7-alpine
+    container_name: beauty-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.1.20
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "6379:6379"
+
+  # ===========================================
+  # AUTH SERVICE - Multiple Instances + Load Balancing
+  # ===========================================
+  
+  auth-service-1:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.production
+    container_name: beauty-auth-service-1
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=6021
+      - DATABASE_URL=postgresql://beauty_platform_user:beauty_platform_2025@pgbouncer:5432/beauty_platform_new
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=beauty-platform-super-secret-jwt-key-2025-production-grade
+      - JWT_REFRESH_SECRET=beauty-platform-refresh-secret-key-2025-secure
+      - MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b
+      - ENABLE_TRACING=false
+      - PRISMA_ENGINE_PROTOCOL=json
+      - PRISMA_TELEMETRY_DISABLED=true
+      - INSTANCE_ID=auth-1
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.2.10
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6021/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  auth-service-2:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.production
+    container_name: beauty-auth-service-2
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=6021
+      - DATABASE_URL=postgresql://beauty_platform_user:beauty_platform_2025@pgbouncer:5432/beauty_platform_new
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=beauty-platform-super-secret-jwt-key-2025-production-grade
+      - JWT_REFRESH_SECRET=beauty-platform-refresh-secret-key-2025-secure
+      - MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b
+      - ENABLE_TRACING=false
+      - PRISMA_ENGINE_PROTOCOL=json
+      - PRISMA_TELEMETRY_DISABLED=true
+      - INSTANCE_ID=auth-2
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.2.11
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6021/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # ===========================================
+  # NGINX LOAD BALANCER - Auth Service HA
+  # ===========================================
+  
+  nginx-auth-lb:
+    image: nginx:alpine
+    container_name: beauty-nginx-auth-lb
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/auth-lb.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/upstream-health.conf:/etc/nginx/conf.d/upstream-health.conf:ro
+    depends_on:
+      auth-service-1:
+        condition: service_healthy
+      auth-service-2:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.3.10
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "6021:80"  # External Auth Service port
+
+  # ===========================================
+  # API GATEWAY - Enhanced with Circuit Breaker
+  # ===========================================
+  
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile.production
+    container_name: beauty-api-gateway
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=6020
+      - AUTH_SERVICE_URL=http://nginx-auth-lb
+      - REDIS_URL=redis://redis:6379
+      - CIRCUIT_BREAKER_ENABLED=true
+      - RATE_LIMIT_ENABLED=true
+      - HEALTH_CHECK_INTERVAL=30000
+    depends_on:
+      nginx-auth-lb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.4.10
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6020/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "6020:6020"
+
+  # ===========================================
+  # MONITORING & OBSERVABILITY
+  # ===========================================
+  
+  health-monitor:
+    build:
+      context: ./services/monitoring
+      dockerfile: Dockerfile
+    container_name: beauty-health-monitor
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=6030
+      - MONITORING_INTERVAL=30000
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - SERVICES_TO_MONITOR=nginx-auth-lb,api-gateway,postgres-primary,redis
+    depends_on:
+      - api-gateway
+      - redis
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.5.10
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "6030:6030"
+
+  # ===========================================
+  # ADMIN PANEL (существующий, интегрируем)
+  # ===========================================
+  
+  admin-panel:
+    build:
+      context: ./apps/admin-panel
+      dockerfile: Dockerfile.production
+    container_name: beauty-admin-panel
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=6002
+      - VITE_API_URL=http://api-gateway:6020
+      - VITE_AUTH_URL=http://nginx-auth-lb
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.6.10
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "6002:6002"
+
+  # ===========================================
+  # CRM API (существующий, контейнеризуем)
+  # ===========================================
+  
+  crm-api:
+    build:
+      context: ./services/crm-api
+      dockerfile: Dockerfile.production
+    container_name: beauty-crm-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=6022
+      - DATABASE_URL=postgresql://beauty_platform_user:beauty_platform_2025@pgbouncer:5432/beauty_platform_new
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=beauty-platform-super-secret-jwt-key-2025-production-grade
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      beauty-network:
+        ipv4_address: 172.20.7.10
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6022/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "6022:6022"

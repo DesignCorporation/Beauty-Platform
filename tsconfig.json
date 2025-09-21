@@ -1,0 +1,64 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    
+    // Strict type checking
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    
+    // Interoperability
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    // Path mapping for monorepo
+    "baseUrl": ".",
+    "paths": {
+      "@beauty/core": ["./core/src"],
+      "@beauty/core/*": ["./core/src/*"],
+      "@beauty/shared": ["./core/shared/src"],
+      "@beauty/shared/*": ["./core/shared/src/*"],
+      "@beauty/database": ["./core/database/src"],
+      "@beauty/database/*": ["./core/database/src/*"],
+      "@beauty/config": ["./core/config/src"],
+      "@beauty/config/*": ["./core/config/src/*"]
+    },
+    
+    // Output
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "removeComments": false,
+    
+    // Experimental
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "core/**/*",
+    "apps/**/*",
+    "services/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
+}

@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 💳 Подписки салонов
+model Subscription {
+  id                   String   @id @default(cuid())
+  tenantId             String   // 🔐 КРИТИЧНО: Tenant isolation
+  plan                 String   // TRIAL, BASIC, PRO, ENTERPRISE
+  status               String   @default("TRIAL") // TRIAL, ACTIVE, CANCELLED, PAST_DUE
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)
+  trialEndsAt          DateTime?
+
+  // Metadata
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  payments             Payment[]
+
+  @@index([tenantId])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+  @@map("subscriptions")
+}
+
+// 💰 Платежи и транзакции
+model Payment {
+  id                     String       @id @default(cuid())
+  tenantId               String       // 🔐 КРИТИЧНО: Tenant isolation
+  subscriptionId         String?
+
+  // Stripe данные
+  stripePaymentIntentId  String?      @unique
+  stripeInvoiceId        String?      @unique
+
+  // Сумма и валюта
+  amount                 Decimal      @db.Decimal(10,2)
+  currency               String       @default("EUR") // EUR, PLN, USD
+
+  // Статус
+  status                 String       // PENDING, SUCCEEDED, FAILED, CANCELLED
+  description            String?
+
+  // Metadata
+  metadata               Json?        // Дополнительные данные от Stripe
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // Relations
+  subscription           Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@index([stripePaymentIntentId])
+  @@index([stripeInvoiceId])
+  @@index([status])
+  @@map("payments")
+}
+
+// 🧾 Инвойсы для PDF генерации
+model Invoice {
+  id                String    @id @default(cuid())
+  tenantId          String    // 🔐 КРИТИЧНО: Tenant isolation
+  subscriptionId    String?
+  paymentId         String?
+
+  // Номер инвойса
+  invoiceNumber     String    @unique
+
+  // Суммы
+  subtotal          Decimal   @db.Decimal(10,2)
+  taxAmount         Decimal   @db.Decimal(10,2) @default(0)
+  totalAmount       Decimal   @db.Decimal(10,2)
+  currency          String    @default("EUR")
+
+  // Периоды
+  periodStart       DateTime
+  periodEnd         DateTime
+  dueDate           DateTime
+
+  // Статус
+  status            String    // DRAFT, SENT, PAID, OVERDUE, CANCELLED
+
+  // PDF
+  pdfUrl            String?   // URL к сгенерированному PDF
+
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@map("invoices")
+}

@@ -1,0 +1,496 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "reset": "Reset",
+    "refresh": "Refresh",
+    "open": "Open",
+    "find": "Find",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noResults": "No results found",
+    "tryDifferentFilters": "Try adjusting your search filters"
+  },
+  "app": {
+    "title": "Beauty CRM",
+    "subtitle": "Beauty Salon",
+    "adminProfile": "Admin",
+    "adminEmail": "admin@salon.com",
+    "user": "User",
+    "userRole": "user"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "calendar": "Calendar",
+    "services": "Services",
+    "clients": "Clients",
+    "team": "Team",
+    "payments": "Payments",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "dashboard": {
+    "welcome": "Welcome to Beauty CRM! 👋",
+    "subtitle": "Beauty salon management panel",
+    "stats": {
+      "appointmentsToday": "Appointments today",
+      "activeClients": "Active clients",
+      "monthlyRevenue": "Monthly revenue",
+      "staffOccupancy": "Staff occupancy"
+    },
+    "quickActions": "Quick Actions",
+    "quickActionsDescription": "Main CRM system operations",
+    "newAppointment": "New appointment",
+    "addClient": "Add client",
+    "reportsAnalytics": "Reports and analytics",
+    "clientSearch": "Client Search",
+    "clientSearchDescription": "Find client by name or phone",
+    "clientSearchPlaceholder": "Enter name or phone number...",
+    "findClient": "Find client",
+    "recentClients": "Recent clients:"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "Appointment management",
+    "monthNames": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "dayNames": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "dayNamesShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "today": "Today",
+    "newAppointment": "New Appointment",
+    "noAppointments": "No appointments for this day"
+  },
+  "services": {
+    "title": "Services",
+    "subtitle": "Salon service management",
+    "addService": "Add Service",
+    "editService": "Edit Service",
+    "deleteService": "Delete Service",
+    "serviceName": "Service Name",
+    "servicePrice": "Price",
+    "serviceDuration": "Duration",
+    "serviceDescription": "Description",
+    "serviceCategory": "Category"
+  },
+  "clients": {
+    "title": "Clients",
+    "subtitle": "Client database management",
+    "addClient": "Add Client",
+    "editClient": "Edit Client",
+    "deleteClient": "Delete Client",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "birthday": "Birthday",
+    "notes": "Notes",
+    "lastVisit": "Last Visit",
+    "totalVisits": "Total Visits"
+  },
+  "team": {
+    "title": "Team",
+    "subtitle": "Manage salon employees",
+    "addEmployee": "Add Employee",
+    "inviteEmployee": "Invite",
+    "addMember": "Add Team Member",
+    "editMember": "Edit Team Member",
+    "deleteMember": "Delete Team Member",
+    "memberName": "Name",
+    "memberRole": "Role",
+    "memberEmail": "Email",
+    "memberPhone": "Phone",
+    "memberSpecialty": "Specialty",
+    "memberSchedule": "Schedule",
+    "search": "Search employees...",
+    "filterByRole": "Filter by Role",
+    "filterByStatus": "Filter by Status",
+    "allRoles": "All Roles",
+    "allStatuses": "All Statuses",
+    "viewProfile": "View Profile",
+    "editProfile": "Edit Profile",
+    "deactivate": "Deactivate",
+    "noEmployees": "No Employees",
+    "noEmployeesDesc": "Add your first employee to get started",
+    "roles": {
+      "SALON_OWNER": "Salon Owner",
+      "MANAGER": "Manager",
+      "STAFF_MEMBER": "Staff Member",
+      "RECEPTIONIST": "Receptionist",
+      "ACCOUNTANT": "Accountant"
+    },
+    "reviews": "reviews",
+    "services": "Services",
+    "years": "Years",
+    "growth": "Growth",
+    "online": "Online",
+    "specialties": {
+      "hair": "Hair",
+      "nails": "Nails",
+      "makeup": "Makeup",
+      "massage": "Massage",
+      "skincare": "Skincare"
+    }
+  },
+  "payments": {
+    "title": "Payments",
+    "subtitle": "Payment and transaction management",
+    "addPayment": "Add Payment",
+    "paymentAmount": "Amount",
+    "paymentMethod": "Payment Method",
+    "paymentDate": "Date",
+    "paymentStatus": "Status",
+    "client": "Client",
+    "service": "Service",
+    "totalAmount": "Total Amount",
+    "paymentMethods": {
+      "cash": "Cash",
+      "card": "Card",
+      "transfer": "Bank Transfer"
+    },
+    "paymentStatuses": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "cancelled": "Cancelled"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Reports and statistics",
+    "revenue": "Revenue",
+    "appointments": "Appointments",
+    "clients": "Clients",
+    "services": "Services",
+    "dailyReport": "Daily Report",
+    "weeklyReport": "Weekly Report",
+    "monthlyReport": "Monthly Report",
+    "yearlyReport": "Yearly Report"
+  },
+  "language": {
+    "title": "Interface Language",
+    "current": "Current Language",
+    "switch": "Switch Language",
+    "languages": {
+      "en": "English",
+      "pl": "Polish",
+      "ua": "Ukrainian",
+      "ru": "Russian"
+    }
+  },
+  "currency": {
+    "title": "Currency",
+    "current": "Current Currency",
+    "switch": "Switch Currency",
+    "currencies": {
+      "USD": "US Dollar",
+      "EUR": "Euro",
+      "PLN": "Polish Zloty",
+      "UAH": "Ukrainian Hryvnia"
+    }
+  },
+  "messages": {
+    "confirmDelete": "Are you sure you want to delete this?",
+    "deleteSuccess": "Successfully deleted",
+    "saveSuccess": "Changes saved",
+    "networkError": "Network error, check your connection",
+    "serverError": "Server error, please try later",
+    "validationError": "Please check that the fields are filled correctly"
+  },
+  "registration": {
+    "title": "Create Your Beauty Salon",
+    "subtitle": "Join thousands of salons worldwide",
+    "security": "Your data is protected with 256-bit SSL encryption",
+    "continue": "Continue →",
+    "back": "Back",
+    "saving": "Saving...",
+    "processing": "Processing...",
+    "optional": "optional",
+    "steps": {
+      "owner": "Owner",
+      "salon": "Salon", 
+      "location": "Location",
+      "services": "Services",
+      "pricing": "Pricing",
+      "activation": "Activation"
+    },
+    "progress": "Registration Progress",
+    "motivation": {
+      "start": "Let's start creating your salon!",
+      "progress": "Great! Let's continue setup",
+      "final": "Almost done! Just confirm your details"
+    },
+    "owner": {
+      "title": "Tell us about yourself",
+      "subtitle": "This information is needed to create your account",
+      "firstName": "First Name",
+      "lastName": "Last Name", 
+      "email": "Email",
+      "phone": "Phone",
+      "language": "Interface Language",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastNamePlaceholder": "Enter your last name",
+      "emailPlaceholder": "your@email.com",
+      "phonePlaceholder": "+1 123 456 789",
+      "emailNote": "This email will be used to log into the system",
+      "phoneNote": "Required for SMS verification",
+      "privacy": "By registering, you agree to our terms of service and privacy policy",
+      "checking": "Checking data...",
+      "selected": "selected"
+    },
+    "salon": {
+      "title": "Tell us about your business",
+      "subtitle": "The name your clients will see",
+      "salonName": "Salon Name",
+      "website": "Website",
+      "businessType": "How do you work with clients?",
+      "salonNamePlaceholder": "Beauty Studio \"Glamour\"",
+      "websitePlaceholder": "www.your-salon.com",
+      "websiteNote": "If you don't have a website, we'll help create a beautiful page",
+      "help": "Not sure what to choose? You can always change settings later",
+      "businessTypes": {
+        "salon": {
+          "title": "Clients come to the salon",
+          "description": "Fixed salon with permanent address"
+        },
+        "mobile": {
+          "title": "Mobile master",
+          "description": "I visit clients at home"
+        },
+        "home": {
+          "title": "Work from home", 
+          "description": "I receive clients at my home"
+        },
+        "online": {
+          "title": "Online consultations",
+          "description": "Video consultations and online services"
+        }
+      }
+    },
+    "location": {
+      "questionSalon": "Where is your salon located?",
+      "questionMobile": "In which country do you work?",
+      "questionHome": "In which country is your home?",
+      "questionOnline": "In which country are you located?",
+      "subtitle": "This will help configure currency and local features",
+      "country": "Country",
+      "currency": "Currency",
+      "recommended": "Recommended",
+      "addressTitle": "Salon Address",
+      "street": "Street and house number",
+      "city": "City",
+      "postalCode": "Postal Code",
+      "streetPlaceholder": "Main St., 15",
+      "cityPlaceholder": "New York", 
+      "postalCodePlaceholder": "10001",
+      "addressNote": "Exact address will help clients easily find your salon"
+    },
+    "services": {
+      "title": "What services do you provide?",
+      "subtitle": "Select up to 5 main areas of your business",
+      "categoriesTitle": "Service Categories",
+      "selected": "selected",
+      "popular": "Popular",
+      "other": "Other Areas",
+      "teamSizeTitle": "Your Team Size",
+      "help": "Selected categories will help configure the system for your business",
+      "categories": {
+        "hair": {
+          "title": "Hair Services",
+          "description": "Cuts, styling, coloring"
+        },
+        "nails": {
+          "title": "Manicure and Pedicure",
+          "description": "Nail care, design"
+        },
+        "brows": {
+          "title": "Brows and Lashes",
+          "description": "Correction, tinting, extensions"
+        },
+        "massage": {
+          "title": "Massage and SPA",
+          "description": "Relaxation, body care"
+        },
+        "makeup": {
+          "title": "Makeup and Visage",
+          "description": "Evening, bridal makeup"
+        },
+        "cosmetology": {
+          "title": "Cosmetology",
+          "description": "Facials, peels, treatments"
+        },
+        "aesthetic": {
+          "title": "Aesthetic Medicine", 
+          "description": "Injections, contouring"
+        },
+        "fitness": {
+          "title": "Fitness and Yoga",
+          "description": "Personal training, yoga"
+        }
+      },
+      "teamSizes": {
+        "solo": {
+          "title": "I work alone",
+          "description": "Individual entrepreneur"
+        },
+        "small": {
+          "title": "I have a team of 2-5 people",
+          "description": "Small team of masters"
+        },
+        "medium": {
+          "title": "Medium salon 6-15 people",
+          "description": "Full-service beauty salon"
+        },
+        "large": {
+          "title": "Large salon 16+ people",
+          "description": "Salon chain or large center"
+        }
+      }
+    },
+    "pricing": {
+      "title": "Choose Your Pricing Plan",
+      "subtitle": "Start with a free 7-day trial",
+      "trialTitle": "7 days free for all plans!",
+      "trialFeature1": "Full access to all features",
+      "trialFeature2": "No client limits",
+      "trialFeature3": "Cancel anytime",
+      "popular": "Popular",
+      "recommended": "Recommended",
+      "selectPlan": "Select Plan",
+      "selected": "Selected",
+      "selectedPlan": "You selected plan",
+      "planInfo": "You'll get 7 days of free access to all features. Cancel anytime without fees.",
+      "changeAnytime": "You can change your plan anytime",
+      "noCommitment": "No commitment. Cancel with one click.",
+      "startTrial": "Start Free Trial →",
+      "perMonth": "per month",
+      "month": "mo",
+      "thenPrice": "then",
+      "freeTrial": "7 days free",
+      "plans": {
+        "starter": {
+          "name": "STARTER",
+          "subtitle": "Free for 7 days",
+          "price": "Free",
+          "features": {
+            "team": "1 owner + up to 2 masters",
+            "calendar": "Basic appointment calendar",
+            "clients": "Up to 50 clients",
+            "support": "Email support"
+          }
+        },
+        "team": {
+          "name": "TEAM", 
+          "subtitle": "For small teams",
+          "features": {
+            "team": "Up to 5 employees",
+            "calendar": "Full calendar",
+            "clients": "Unlimited clients",
+            "sms": "SMS notifications",
+            "analytics": "Basic analytics",
+            "support": "Priority support"
+          }
+        },
+        "business": {
+          "name": "BUSINESS",
+          "subtitle": "For professional salons",
+          "features": {
+            "team": "Up to 10 employees",
+            "analytics": "Advanced analytics",
+            "social": "Social media integrations",
+            "booking": "Online booking for clients",
+            "multi": "Multi-location",
+            "crm": "Extended CRM"
+          }
+        },
+        "enterprise": {
+          "name": "ENTERPRISE",
+          "subtitle": "For large chains",
+          "features": {
+            "team": "Up to 25 employees",
+            "api": "API access",
+            "manager": "Personal manager",
+            "integrations": "Custom integrations",
+            "whitelabel": "White-label solutions",
+            "priority": "24/7 priority support"
+          }
+        }
+      }
+    },
+    "activation": {
+      "emailTitle": "Verifying your email",
+      "emailSubtitle": "We sent an email to",
+      "emailSent": "Email sent!",
+      "emailSending": "Sending email...",
+      "emailInstructions": "Check your spam folder if the email doesn't arrive",
+      "smsTitle": "Confirm your phone number",
+      "smsSubtitle": "We sent a code to",
+      "sendSMS": "Send SMS code",
+      "smsSending": "Sending SMS...",
+      "enterCode": "Enter the code from SMS",
+      "resendIn": "Resend in",
+      "seconds": "sec",
+      "resendSMS": "Send code again",
+      "testCode": "For testing use code:",
+      "verifyCode": "Verify Code",
+      "termsTitle": "Final step!",
+      "termsSubtitle": "Review the terms of service",
+      "termsOfService": "Beauty Platform Terms of Service",
+      "term1": "You get access to beauty salon management system",
+      "term2": "Personal data is protected according to GDPR",
+      "term3": "Payment is made monthly according to chosen plan",
+      "term4": "Subscription cancellation is possible anytime",
+      "term5": "Technical support is available during business hours",
+      "acceptTerms": "I accept",
+      "termsLink": "terms of service",
+      "and": "and",
+      "privacyLink": "privacy policy",
+      "subscribe": "Subscribe to news about new features and updates",
+      "createSalon": "Create Salon! 🎉",
+      "creating": "Creating your salon...",
+      "creatingSubtitle": "Setting up the system for your needs",
+      "step1": "Creating user",
+      "step2": "Setting up salon",
+      "step3": "Preparing workspace",
+      "waitMessage": "This will only take a few seconds..."
+    },
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "firstNameTooShort": "First name must be at least 2 characters",
+      "lastNameRequired": "Last name is required", 
+      "lastNameTooShort": "Last name must be at least 2 characters",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email",
+      "phoneRequired": "Phone is required",
+      "phoneInvalid": "Enter a valid phone number",
+      "salonNameRequired": "Salon name is required",
+      "salonNameTooShort": "Name must be at least 3 characters",
+      "websiteInvalid": "Enter a valid website URL",
+      "countryRequired": "Select a country",
+      "streetRequired": "Enter address",
+      "cityRequired": "Enter city",
+      "postalCodeRequired": "Enter postal code",
+      "serviceCategoriesRequired": "Select at least one service category",
+      "serviceCategoriesMax": "Select no more than 5 categories",
+      "smsCodeRequired": "Enter 6-digit code from SMS",
+      "smsCodeInvalid": "Code must contain only digits",
+      "smsCodeWrong": "Wrong code. Try again.",
+      "termsRequired": "You must accept the terms of service"
+    }
+  }
+}
