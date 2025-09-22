@@ -75,12 +75,14 @@ app.use(cors({
       'http://localhost:6002',           // Admin Panel (dev)
       'http://localhost:6003',           // Client Booking (dev)
       'http://localhost:6004',           // Public Websites (dev)
-      'https://test-crm.beauty.designcorp.eu',     // Production CRM
-      'https://test-admin.beauty.designcorp.eu',   // Production Test Admin
-      'https://admin.beauty.designcorp.eu',        // Production Admin
+      'https://dev-salon.beauty.designcorp.eu',    // Development Salon CRM
+      'https://dev-admin.beauty.designcorp.eu',    // Development Admin Panel
+      'https://dev-client.beauty.designcorp.eu',   // Development Client Portal
+      'https://dev.beauty.designcorp.eu',          // Development Landing Page
+      'https://salon.beauty.designcorp.eu',        // Production Salon CRM
+      'https://admin.beauty.designcorp.eu',        // Production Admin Panel
       'https://client.beauty.designcorp.eu',       // Production Client Portal
-      'https://book.beauty.designcorp.eu',         // Production Booking
-      'https://beauty.designcorp.eu',              // Production Landing
+      'https://beauty.designcorp.eu',              // Production Landing Page
       `http://135.181.156.117:6001`,              // Direct IP access
       `http://135.181.156.117:6002`,
       `http://135.181.156.117:6003`,

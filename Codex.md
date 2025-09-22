@@ -1,9 +1,9 @@
 # Codex — шпаргалка для Codex CLI
 
-*(обновлено: 19.09.2025)*
+*(обновлено: 22.09.2025)*
 
 ## Общая картина
-- Проект **Beauty Platform**: монорепозиторий `/root/beauty-platform`.
+- Проект **Beauty Platform**: монорепозиторий `/root/projects/beauty`.
 - Фронт (apps):
   - `landing-page` (6000)
   - `salon-crm` (6001)
@@ -44,7 +44,7 @@
 ## Аутентификация и токены
 - Auth Service (`services/auth-service`) выдаёт JWT c полями `{ userId, tenantId, role, email, type }`.
 - CRM API (`services/crm-api`) проверяет токен в middleware `src/middleware/auth.ts`.
-  - После исправления 18.09.2025 middleware валидирует JWT и пишет лог в `/root/beauty-platform/logs/crm-api-auth.log`.
+  - После исправления 18.09.2025 middleware валидирует JWT и пишет лог в `/root/projects/beauty/logs/crm-api-auth.log`.
   - Лог полезен для проверки, какой `tenantId` реально приходит из фронта.
 - Если список сотрудников/клиентов пуст, первое, что проверить — записи в `crm-api-auth.log` и наличие данных в БД для указанного tenant.
 

@@ -15,6 +15,7 @@ export default defineConfig({
     port: 6003,
     host: '0.0.0.0',
     allowedHosts: [
+      'dev-client.beauty.designcorp.eu',
       'client.beauty.designcorp.eu',
       'localhost',
       '135.181.156.117'

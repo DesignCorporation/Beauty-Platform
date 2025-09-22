@@ -1,6 +1,6 @@
 # 🧠 Claude Current Memory - Beauty Platform
 
-**Дата обновления:** 20.09.2025
+**Дата обновления:** 22.09.2025
 **Статус проекта:** 95% готовности, Production Ready
 **Моя роль:** Lead Technical Developer & Architecture Guardian
 
@@ -44,12 +44,13 @@ curl "http://localhost:6025/mcp/search?q=microservices"
 
 ## 🔧 КРИТИЧЕСКИЕ ПРАВИЛА (всегда соблюдать):
 
-1. **ВСЕГДА**: `tenantPrisma(tenantId)` для изоляции данных
-2. **ВСЕГДА**: `httpOnly cookies` для токенов аутентификации
-3. **ВСЕГДА**: Shadcn/UI компоненты для интерфейса
-4. **НИКОГДА**: `prisma.*` прямые запросы к базе
-5. **НИКОГДА**: `localStorage` для хранения токенов
-6. **НИКОГДА**: Cross-tenant доступ к данным
+1. **ЯЗЫК ОБЩЕНИЯ**: Русский язык для всех проектов Design Corporation
+2. **ВСЕГДА**: `tenantPrisma(tenantId)` для изоляции данных
+3. **ВСЕГДА**: `httpOnly cookies` для токенов аутентификации
+4. **ВСЕГДА**: Shadcn/UI компоненты для интерфейса
+5. **НИКОГДА**: `prisma.*` прямые запросы к базе
+6. **НИКОГДА**: `localStorage` для хранения токенов
+7. **НИКОГДА**: Cross-tenant доступ к данным
 
 ## 🚀 CRM DEVELOPMENT WORKFLOW (19.09.2025):
 
@@ -57,13 +58,13 @@ curl "http://localhost:6025/mcp/search?q=microservices"
 - **Все изменения в CRM**: только через `npm run build`
 - **Batch-подход**: пользователь дает большое количество правок сразу
 - **Финализация**: всегда заканчивать билдом после всех изменений
-- **Location**: `/root/beauty-platform/apps/salon-crm/`
-- **URL**: https://test-crm.beauty.designcorp.eu
+- **Location**: `/root/projects/beauty/apps/salon-crm/`
+- **URL**: https://salon.beauty.designcorp.eu
 
 ## 📊 АРХИТЕКТУРА ПРОЕКТА
 
 ```
-/root/beauty-platform/                 # НОВАЯ АРХИТЕКТУРА
+/root/projects/beauty/                  # PRODUCTION АРХИТЕКТУРА
 ├── apps/                              # Frontend Applications
 │   ├── landing-page/      (6000) ✅   # SEO Landing Page для салонов
 │   ├── salon-crm/         (6001) ✅   # React CRM система
@@ -88,7 +89,7 @@ curl "http://localhost:6025/mcp/search?q=microservices"
 
 ## 🚀 SHARED MIDDLEWARE ГОТОВ (20.09.2025)
 
-**Локация:** `/root/beauty-platform/packages/shared-middleware/`
+**Локация:** `/root/projects/beauty/packages/shared-middleware/`
 **Статус:** ✅ Полностью реализован и готов к использованию
 
 ### Возможности:
@@ -133,7 +134,7 @@ app.use('/api', auth.strictTenantAuth);
 
 1. **CRM AUTHENTICATION ISSUE FIXED** (16.09.2025):
    - ✅ **Проблема определена**: CRM использовал mock token 'Bearer mock-jwt-token-for-testing'
-   - ✅ **Исправление выполнено**: Убран mock token из `/root/beauty-platform/apps/salon-crm/src/services/crmApiNew.ts:78`
+   - ✅ **Исправление выполнено**: Убран mock token из `/root/projects/beauty/apps/salon-crm/src/services/crmApiNew.ts:78`
    - ✅ **Результат**: Теперь использует httpOnly cookies для JWT аутентификации
    - ✅ **Подтверждение пользователя**: "я вижу услуги и клиентов в CRM" 🎊
    - ✅ **Календарь протестирован**: Создана тестовая запись (ID: cmfmj54h5000125jautsx5yx1)
@@ -219,7 +220,7 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ Services Monitoring теперь имеет production-ready внешний вид
 
 11. **CRM APPOINTMENTS API АНАЛИЗ ЗАВЕРШЕН** (15.09.2025):
-   - ✅ Проведен полный анализ существующего CRM Appointments API (/root/beauty-platform/services/crm-api/src/routes/appointments.ts)
+   - ✅ Проведен полный анализ существующего CRM Appointments API (/root/projects/beauty/services/crm-api/src/routes/appointments.ts)
    - ✅ ОТКРЫТИЕ: API уже полностью реализован и ПРЕВОСХОДИТ требования Gemini из TASK_API_APPOINTMENTS.md
    - ✅ Всего 656 строк кода с полным CRUD функционалом: GET, POST, PUT, PATCH, DELETE
    - ✅ Продвинутые функции: conflict detection, appointment numbering (001.02.DD.MM.YYYY), status management
@@ -306,9 +307,9 @@ app.use('/api', auth.strictTenantAuth);
      - endTime поле сделано readonly с пояснением "Рассчитывается автоматически"
      - Добавлен pattern="[0-9]{2}:[0-9]{2}" для валидации формата времени
    - ✅ **Результат**: Пользователи больше НЕ МОГУТ ввести произвольные минуты - только 00/15/30/45
-   - ✅ **Файлы обновлены**: 
-     - `/root/beauty-platform/apps/salon-crm/src/pages/AppointmentFormPage.tsx` - основная логика
-     - `/root/beauty-platform/apps/salon-crm/src/pages/CalendarPage.tsx` - функция roundTimeToQuarterHour
+   - ✅ **Файлы обновлены**:
+     - `/root/projects/beauty/apps/salon-crm/src/pages/AppointmentFormPage.tsx` - основная логика
+     - `/root/projects/beauty/apps/salon-crm/src/pages/CalendarPage.tsx` - функция roundTimeToQuarterHour
 
 16. **🔧 МОНИТОРИНГ СИСТЕМА - УЛУЧШЕНИЯ ОТ КОДЕКСА** (17.09.2025):
    - ✅ **Реальный рестарт сервисов**: Новый helper `runSmartRestore()` вызывает deployment/auto-restore/smart-restore-manager.sh
@@ -327,15 +328,15 @@ app.use('/api', auth.strictTenantAuth);
      - Кнопки рестарта показывают спиннеры, блокируются на время операции
      - Логирование сниппетов логов от smart-restore в реальном времени
    - ✅ **Environment переменные добавлены**:
-     - SMART_RESTORE_SCRIPT=/root/beauty-platform/deployment/auto-restore/smart-restore-manager.sh
-     - SMART_RESTORE_WORKDIR=/root/beauty-platform
+     - SMART_RESTORE_SCRIPT=/root/projects/beauty/deployment/auto-restore/smart-restore-manager.sh
+     - SMART_RESTORE_WORKDIR=/root/projects/beauty
      - MONITORING_SERVICE_URL=http://localhost:6030
    - ✅ **Протестировано**: Реальный рестарт MCP сервера через API работает корректно
    - ✅ **Файлы обновлены**:
-     - `/root/beauty-platform/services/api-gateway/src/config/monitoring-services.ts` - autoRestoreKey поля
-     - `/root/beauty-platform/services/api-gateway/src/routes/monitoring.ts` - новая логика рестарта
-     - `/root/beauty-platform/services/api-gateway/src/alerts/TelegramAlert.ts` - автоматическое включение
-     - `/root/beauty-platform/apps/admin-panel/src/pages/ServicesMonitoringPage.tsx` - новый UI
+     - `/root/projects/beauty/services/api-gateway/src/config/monitoring-services.ts` - autoRestoreKey поля
+     - `/root/projects/beauty/services/api-gateway/src/routes/monitoring.ts` - новая логика рестарта
+     - `/root/projects/beauty/services/api-gateway/src/alerts/TelegramAlert.ts` - автоматическое включение
+     - `/root/projects/beauty/apps/admin-panel/src/pages/ServicesMonitoringPage.tsx` - новый UI
 
 17. **🚨 КРИТИЧЕСКИЙ БАГ MFA ИСПРАВЛЕН - SALON MANAGEMENT РАБОТАЕТ** (17.09.2025):
    - ✅ **ПРОБЛЕМА**: Endpoint `/api/auth/admin/salons` возвращал 403 Forbidden после успешной аутентификации
@@ -354,7 +355,7 @@ app.use('/api', auth.strictTenantAuth);
        maxAge: 24 * 60 * 60 * 1000 // 24 часа (дольше чем access token)
      });
      ```
-   - ✅ **ФАЙЛ**: `/root/beauty-platform/services/auth-service/src/routes/mfa.ts:563-568`
+   - ✅ **ФАЙЛ**: `/root/projects/beauty/services/auth-service/src/routes/mfa.ts:563-568`
    - ✅ **РЕЗУЛЬТАТ**: Salon Management теперь показывает оба салона (Test Beauty Salon 2025, Beauty Test Salon)
    - ✅ **ВАЖНО**: При любых проблемах с admin panel - сначала проверить что MFA cookies установлены корректно!
 
@@ -379,7 +380,7 @@ app.use('/api', auth.strictTenantAuth);
 3. **TypeScript cleanup** - исправить все ошибки типизации
 4. **Production deployment** - Beta ready
 
-**📋 ROADMAP:** /root/beauty-platform/docs/BETA_RELEASE_ROADMAP.md
+**📋 ROADMAP:** /root/projects/beauty/docs/BETA_RELEASE_ROADMAP.md
 
 ## 💬 МОИ ПРИНЦИПЫ РАБОТЫ
 
@@ -439,9 +440,9 @@ app.use('/api', auth.strictTenantAuth);
 - **Cross-links**: Прямые ссылки между секциями для удобной навигации
 
 ### Локация файлов:
-- **Планы:** `/root/beauty-platform/DOCUMENTATION_SYNC_PLAN.md`
-- **Отчет реорганизации:** `/root/beauty-platform/DOCUMENTATION_REORGANIZATION_REPORT.md`
-- **Админка секции:** `/root/beauty-platform/apps/admin-panel/src/components/documentation/sections/`
+- **Планы:** `/root/projects/beauty/DOCUMENTATION_SYNC_PLAN.md`
+- **Отчет реорганизации:** `/root/projects/beauty/DOCUMENTATION_REORGANIZATION_REPORT.md`
+- **Админка секции:** `/root/projects/beauty/apps/admin-panel/src/components/documentation/sections/`
 
 ## 🗂️ ОЧИСТКА ДОКУМЕНТАЦИИ (19.09.2025)
 
@@ -481,5 +482,21 @@ app.use('/api', auth.strictTenantAuth);
 - ✅ **Помечен зеленым**: Статус 'updated' в AdminLayout.tsx
 - ✅ **Удалена папка**: docs/04-deployment/ после переноса всего контента
 
+18. **🔧 AUTO-RESTORE СИСТЕМА - ВОССТАНОВЛЕНА ПОСЛЕ МИГРАЦИИ** (22.09.2025):
+   - ✅ **ПРОБЛЕМА**: Admin panel 500 ошибки из-за старых путей в auto-restore.ts после миграции проекта
+   - ✅ **КОРНЕВАЯ ПРИЧИНА**: Файл `/services/api-gateway/src/routes/auto-restore.ts` содержал старые пути `/root/beauty-platform`
+   - ✅ **ИСПРАВЛЕНИЯ ВЫПОЛНЕНЫ**:
+     - Обновлены константы SMART_MANAGER, LOG_DIR, ALERTS_DIR с `/root/beauty-platform` на `/root/projects/beauty`
+     - Создана отсутствующая директория `/deployment/auto-restore/alerts/`
+     - API Gateway перезапущен и функционирует корректно на порту 6020
+   - ✅ **ТЕСТИРОВАНИЕ ПРОЙДЕНО**:
+     - `/api/auto-restore/status` ✅ - 12 из 13 сервисов HEALTHY
+     - `/api/auto-restore/config` ✅ - конфигурация с обновленными путями
+     - `/api/auto-restore/circuit-breaker-status` ✅ - предохранители работают
+     - `/api/auto-restore/alerts` ✅ - система алертов функционирует
+     - `/api/auto-restore/restore/mcp-server` ✅ - восстановление сервисов работает
+   - ✅ **РЕЗУЛЬТАТ**: Auto-restore система полностью восстановлена, MCP Server успешно восстановлен через API
+   - ✅ **ФАЙЛЫ ОБНОВЛЕНЫ**: `/services/api-gateway/src/routes/auto-restore.ts:7-9`
+
 ---
-*Последнее обновление памяти: 19.09.2025 - синхронизация документации: завершены QuickStart, Architecture, Auth, Security, Frontend, DevOps. Следующее: Auto-Restore System и другие оставшиеся секции*
+*Последнее обновление памяти: 22.09.2025 - AUTO-RESTORE СИСТЕМА ВОССТАНОВЛЕНА: исправлены пути после миграции проекта, все эндпоинты протестированы и работают корректно*

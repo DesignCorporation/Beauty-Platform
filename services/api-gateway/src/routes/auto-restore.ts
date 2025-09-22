@@ -4,9 +4,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 const router: express.Router = express.Router();
-const SMART_MANAGER = '/root/beauty-platform/deployment/auto-restore/smart-restore-manager.sh';
-const LOG_DIR = '/root/beauty-platform/logs/auto-restore';
-const ALERTS_DIR = '/root/beauty-platform/logs/auto-restore/alerts';
+const SMART_MANAGER = '/root/projects/beauty/deployment/auto-restore/smart-restore-manager.sh';
+const LOG_DIR = '/root/projects/beauty/deployment/auto-restore';
+const ALERTS_DIR = '/root/projects/beauty/deployment/auto-restore/alerts';
 
 interface ExecResult {
     stdout: string;

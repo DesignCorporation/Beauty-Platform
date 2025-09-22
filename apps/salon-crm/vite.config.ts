@@ -19,13 +19,14 @@ export default defineConfig(({ mode }) => {
     host: '0.0.0.0',
     strictPort: true,
     allowedHosts: [
-      'test-crm.beauty.designcorp.eu',
+      'dev-salon.beauty.designcorp.eu',
+      'salon.beauty.designcorp.eu',
       'localhost',
       '135.181.156.117'
     ],
     // HMR включен для HTTPS домена
     hmr: {
-      host: 'test-crm.beauty.designcorp.eu',
+      host: 'dev-salon.beauty.designcorp.eu',
       protocol: 'wss',
       clientPort: 443
     },

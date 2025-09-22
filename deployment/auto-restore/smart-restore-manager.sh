@@ -437,7 +437,7 @@ SERVICES[landing-page]="6000:/root/projects/beauty/apps/landing-page:npm run dev
 SERVICES[admin-panel]="6002:/root/projects/beauty/apps/admin-panel:npm run dev"
 SERVICES[salon-crm]="6001:/root/projects/beauty/apps/salon-crm:npm run dev"
 SERVICES[client-portal]="6003:/root/projects/beauty/apps/client-booking:npm run build && npm start"
-SERVICES[api-gateway]="6020:/root/projects/beauty/services/api-gateway:npm start"  
+SERVICES[api-gateway]="6020:/root/projects/beauty/services/api-gateway:npm start"
 SERVICES[auth-service]="6021:/root/projects/beauty/services/auth-service:ENABLE_TRACING=false MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b npx tsx src/server.ts"
 SERVICES[mcp-server]="6025:/root/projects/beauty/services/mcp-server:npm run dev"
 SERVICES[images-api]="6026:/root/projects/beauty/services/images-api:PORT=6026 node src/server.js"

@@ -17,7 +17,12 @@ export default defineConfig({
     port: 6002,
     host: '0.0.0.0',
     allowedHosts: [
-      'test-admin.beauty.designcorp.eu',
+      'dev-admin.beauty.designcorp.eu',
+      'admin.beauty.designcorp.eu',
+      'dev-salon.beauty.designcorp.eu',
+      'salon.beauty.designcorp.eu',
+      'dev-client.beauty.designcorp.eu',
+      'client.beauty.designcorp.eu',
       'localhost',
       '135.181.156.117'
     ],
@@ -36,7 +41,7 @@ export default defineConfig({
     },
     hmr: {
       port: 6002,
-      host: 'test-admin.beauty.designcorp.eu',
+      host: 'dev-admin.beauty.designcorp.eu',
       clientPort: 443,
       protocol: 'wss'
     }
