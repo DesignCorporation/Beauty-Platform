@@ -166,6 +166,11 @@ export default function ServicesMonitoringPage() {
   const [isCircuitBreakerLoading, setIsCircuitBreakerLoading] = useState(false)
   const [isAlertsLoading, setIsAlertsLoading] = useState(false)
 
+  // Dev Orchestrator состояние
+  const [isDevOrchestratorLoading, setIsDevOrchestratorLoading] = useState(false)
+  const [devOrchestratorStatus, setDevOrchestratorStatus] = useState<any>(null)
+  const [telegramAlertStatus, setTelegramAlertStatus] = useState<any>(null)
+
   const autoRestoreKeyMapping: Record<string, string> = {
     'API Gateway': 'api-gateway',
     'Auth Service': 'auth-service',
@@ -558,36 +563,37 @@ export default function ServicesMonitoringPage() {
     }
   }
 
-  // Restart сервиса через новое API
+  // Restart сервиса через Dev Orchestrator API
   const restartService = async (serviceName: string, port: number) => {
     try {
       setRestartInProgress(prev => ({ ...prev, [serviceName]: true }))
-      addLog(serviceName, 'info', `🔄 Attempting to restart ${serviceName} on port ${port}...`)
-      
-      const response = await fetch('/api/monitoring/restart-service', {
+      addLog(serviceName, 'info', `🔄 Restarting ${serviceName} via Dev Orchestrator...`)
+
+      const response = await fetch(`/dev-orchestrator/restart/${serviceName}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serviceName, port })
+        headers: { 'Content-Type': 'application/json' }
       })
 
       if (response.ok) {
-        const data = await response.json()
-        addLog(serviceName, 'info', `✅ ${data.message}`)
-        if (data.logs) {
-          addLog(serviceName, 'debug', '📝 Restore logs captured', { snippet: data.logs.slice(-500) })
+        const result = await response.json()
+        if (result.success) {
+          addLog(serviceName, 'info', `✅ ${result.message}`)
+
+          // Ждем 3 секунды и обновляем статус
+          setTimeout(async () => {
+            addLog(serviceName, 'info', '🔍 Checking service status after restart...')
+            await fetchDevOrchestratorStatus()
+            await fetchServicesHealth()
+          }, 3000)
+        } else {
+          addLog(serviceName, 'error', `❌ Failed to restart: ${result.message}`)
         }
-        
-        // Перепроверяем статус через 5 секунд
-        setTimeout(() => {
-          addLog(serviceName, 'info', '🔍 Checking service status after restart...')
-          fetchServicesHealth()
-        }, 5000)
       } else {
         const errorData = await response.json()
-        addLog(serviceName, 'error', `❌ Failed to restart service: ${errorData.error}`)
+        addLog(serviceName, 'error', `❌ Restart request failed: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
-      addLog(serviceName, 'error', '❌ Restart request failed', error)
+      addLog(serviceName, 'error', `❌ Restart request failed: ${error.message}`)
     } finally {
       setRestartInProgress(prev => ({ ...prev, [serviceName]: false }))
     }
@@ -597,38 +603,72 @@ export default function ServicesMonitoringPage() {
     setStopInProgress(prev => ({ ...prev, [serviceName]: true }))
 
     try {
-      if (!supportsAutoRestore(serviceName)) {
-        addLog(serviceName, 'warn', `⚠️ Stop command недоступен для ${serviceName}`)
-        return
-      }
+      addLog(serviceName, 'info', `🛑 Stopping ${serviceName} via Dev Orchestrator...`)
 
-      const serviceKey = resolveAutoRestoreKey(serviceName)
-      addLog(serviceName, 'info', `🛑 Sending stop command for ${serviceName} (${serviceKey})...`)
-
-      const response = await fetch('/api/monitoring/stop-service', {
+      const response = await fetch(`/dev-orchestrator/stop/${serviceName}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serviceName })
+        headers: { 'Content-Type': 'application/json' }
       })
 
       if (response.ok) {
-        const data = await response.json()
-        addLog(serviceName, 'info', `🛑 ${data.message}`)
-        if (data.logs) {
-          addLog(serviceName, 'debug', '📝 Stop logs captured', { snippet: data.logs.slice(-500) })
+        const result = await response.json()
+        if (result.success) {
+          addLog(serviceName, 'info', `✅ ${result.message}`)
+
+          // Ждем 2 секунды и обновляем статус
+          setTimeout(async () => {
+            addLog(serviceName, 'info', '🔍 Checking service status after stop...')
+            await fetchDevOrchestratorStatus()
+            await fetchServicesHealth()
+          }, 2000)
+        } else {
+          addLog(serviceName, 'error', `❌ Failed to stop: ${result.message}`)
         }
-        setTimeout(() => {
-          addLog(serviceName, 'info', '🔍 Checking service status after stop...')
-          fetchServicesHealth()
-        }, 5000)
       } else {
         const errorData = await response.json()
-        addLog(serviceName, 'error', `❌ Failed to stop service: ${errorData.error}`)
+        addLog(serviceName, 'error', `❌ Stop request failed: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
-      addLog(serviceName, 'error', '❌ Stop request failed', error)
+      addLog(serviceName, 'error', `❌ Stop request failed: ${error.message}`)
     } finally {
       setStopInProgress(prev => ({ ...prev, [serviceName]: false }))
+    }
+  }
+
+  // Start отдельного сервиса через Dev Orchestrator API
+  const startService = async (serviceName: string) => {
+    setRestartInProgress(prev => ({ ...prev, [serviceName]: true }))
+
+    try {
+      addLog(serviceName, 'info', `🚀 Starting ${serviceName} via Dev Orchestrator...`)
+
+      const response = await fetch(`/dev-orchestrator/start/${serviceName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          addLog(serviceName, 'info', `✅ ${result.message}`)
+
+          // Ждем 3 секунды и обновляем статус
+          setTimeout(async () => {
+            addLog(serviceName, 'info', '🔍 Checking service status after start...')
+            await fetchDevOrchestratorStatus()
+            await fetchServicesHealth()
+          }, 3000)
+        } else {
+          addLog(serviceName, 'error', `❌ Failed to start: ${result.message}`)
+        }
+      } else {
+        const errorData = await response.json()
+        addLog(serviceName, 'error', `❌ Start request failed: ${errorData.error || response.statusText}`)
+      }
+    } catch (error) {
+      addLog(serviceName, 'error', `❌ Start request failed: ${error.message}`)
+    } finally {
+      setRestartInProgress(prev => ({ ...prev, [serviceName]: false }))
     }
   }
 
@@ -812,7 +852,7 @@ export default function ServicesMonitoringPage() {
   const clearAlerts = async () => {
     try {
       addLog('Alerts', 'info', '🧹 Clearing old alerts...')
-      
+
       const response = await fetch('/api/auto-restore/alerts', {
         method: 'DELETE'
       })
@@ -835,6 +875,129 @@ export default function ServicesMonitoringPage() {
     }
   }
 
+  // Dev Orchestrator функции
+  const fetchDevOrchestratorStatus = async () => {
+    try {
+      const response = await fetch('/dev-orchestrator/status', {
+        signal: AbortSignal.timeout(10000)
+      })
+      if (!response.ok) throw new Error('Dev Orchestrator not available')
+      const result = await response.json()
+      setDevOrchestratorStatus(result.data)
+      addLog('Dev Orchestrator', 'info', `✅ Connected to Dev Orchestrator: ${result.data.length} services tracked`)
+    } catch (error) {
+      addLog('Dev Orchestrator', 'warn', '⚠️ Dev Orchestrator unavailable (port 6050)')
+      setDevOrchestratorStatus(null)
+    }
+  }
+
+  const fetchTelegramAlertStatus = async () => {
+    try {
+      const response = await fetch('/dev-orchestrator/telegram/status', {
+        signal: AbortSignal.timeout(10000)
+      })
+      if (!response.ok) throw new Error('Telegram API not available')
+      const result = await response.json()
+      setTelegramAlertStatus(result.data)
+      addLog('Telegram Alerts', 'info', `📱 Telegram alerts: ${result.data.enabled ? 'Enabled' : 'Disabled'}`)
+    } catch (error) {
+      addLog('Telegram Alerts', 'warn', '⚠️ Telegram API unavailable')
+      setTelegramAlertStatus(null)
+    }
+  }
+
+  const sendTelegramTest = async () => {
+    setIsDevOrchestratorLoading(true)
+    try {
+      addLog('Telegram Alerts', 'info', '📱 Sending test Telegram message...')
+
+      const response = await fetch('/dev-orchestrator/telegram/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const result = await response.json()
+      if (response.ok && result.success) {
+        addLog('Telegram Alerts', 'info', '✅ Test message sent successfully')
+      } else {
+        addLog('Telegram Alerts', 'warn', `⚠️ Test message failed: ${result.message}`)
+      }
+    } catch (error) {
+      addLog('Telegram Alerts', 'error', `❌ Test message error: ${error.message}`)
+    } finally {
+      setIsDevOrchestratorLoading(false)
+    }
+  }
+
+  const startAllDevOrchestrator = async () => {
+    setIsDevOrchestratorLoading(true)
+    try {
+      addLog('Dev Orchestrator', 'info', '🚀 Starting all services via Dev Orchestrator...')
+
+      const response = await fetch('/dev-orchestrator/start-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          addLog('Dev Orchestrator', 'info', `✅ Started ${result.started.length} services: ${result.started.join(', ')}`)
+
+          // Проверяем статус через 10 секунд
+          setTimeout(async () => {
+            addLog('Dev Orchestrator', 'info', '🔍 Checking service health after startup...')
+            await fetchDevOrchestratorStatus()
+            await fetchServicesHealth()
+          }, 10000)
+        } else {
+          addLog('Dev Orchestrator', 'error', `❌ Failed to start services: ${result.error}`)
+        }
+      } else {
+        const errorData = await response.json()
+        addLog('Dev Orchestrator', 'error', `❌ Start request failed: ${errorData.error}`)
+      }
+    } catch (error) {
+      addLog('Dev Orchestrator', 'error', '❌ Dev Orchestrator request failed', error)
+    } finally {
+      setIsDevOrchestratorLoading(false)
+    }
+  }
+
+  const stopAllDevOrchestrator = async () => {
+    setIsDevOrchestratorLoading(true)
+    try {
+      addLog('Dev Orchestrator', 'info', '🛑 Stopping all services via Dev Orchestrator...')
+
+      const response = await fetch('/dev-orchestrator/stop-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          addLog('Dev Orchestrator', 'info', `✅ Stopped ${result.stopped.length} services: ${result.stopped.join(', ')}`)
+
+          // Проверяем статус через 5 секунд
+          setTimeout(async () => {
+            await fetchDevOrchestratorStatus()
+            await fetchServicesHealth()
+          }, 5000)
+        } else {
+          addLog('Dev Orchestrator', 'error', `❌ Failed to stop services: ${result.error}`)
+        }
+      } else {
+        const errorData = await response.json()
+        addLog('Dev Orchestrator', 'error', `❌ Stop request failed: ${errorData.error}`)
+      }
+    } catch (error) {
+      addLog('Dev Orchestrator', 'error', '❌ Dev Orchestrator request failed', error)
+    } finally {
+      setIsDevOrchestratorLoading(false)
+    }
+  }
+
   // Auto-refresh
   useEffect(() => {
     fetchServicesHealth()
@@ -843,6 +1006,8 @@ export default function ServicesMonitoringPage() {
     fetchCircuitBreakerStatuses()
     fetchAlerts()
     fetchAlertStatus()
+    fetchDevOrchestratorStatus()
+    fetchTelegramAlertStatus()
 
     if (autoRefresh) {
       const interval = setInterval(() => {
@@ -851,6 +1016,8 @@ export default function ServicesMonitoringPage() {
         fetchCircuitBreakerStatuses()
         fetchAlerts()
         fetchAlertStatus()
+        fetchDevOrchestratorStatus()
+        fetchTelegramAlertStatus()
       }, 30000) // Каждые 30 секунд
       return () => clearInterval(interval)
     }
@@ -957,8 +1124,8 @@ export default function ServicesMonitoringPage() {
             <Activity className="w-4 h-4 mr-2" />
             Deep Check
           </Button>
-      <Button 
-        onClick={restoreAllDownServices} 
+      <Button
+        onClick={restoreAllDownServices}
         disabled={isAutoRestoreAllInProgress}
         variant="default"
         className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -967,45 +1134,121 @@ export default function ServicesMonitoringPage() {
         <Wrench className="w-4 h-4 mr-2" />
         {isAutoRestoreAllInProgress ? 'Restoring All...' : 'Auto-Restore All Down'}
       </Button>
+      <Button
+        onClick={startAllDevOrchestrator}
+        disabled={isDevOrchestratorLoading}
+        variant="default"
+        className="bg-green-600 hover:bg-green-700 text-white"
+        title="Start all services using new Dev Orchestrator (6050)"
+      >
+        <Rocket className="w-4 h-4 mr-2" />
+        {isDevOrchestratorLoading ? 'Starting All...' : 'Dev Orchestrator Start All'}
+      </Button>
+      <Button
+        onClick={stopAllDevOrchestrator}
+        disabled={isDevOrchestratorLoading}
+        variant="destructive"
+        title="Stop all services using new Dev Orchestrator (6050)"
+      >
+        <Octagon className="w-4 h-4 mr-2" />
+        {isDevOrchestratorLoading ? 'Stopping All...' : 'Dev Orchestrator Stop All'}
+      </Button>
     </div>
   </div>
+
 
       <Card className="beauty-card border-dashed">
         <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-4">
           <div>
-            <h3 className="text-sm font-semibold">Telegram уведомления</h3>
+            <h3 className="text-sm font-semibold">Dev Orchestrator Service</h3>
             <p className="text-sm text-muted-foreground">
-              {alertStatus
-                ? alertStatus.enabled
-                  ? 'Уведомления активны. Все критические инциденты отправляются в чат Telegram.'
-                  : alertStatus.configured
-                    ? 'Бот настроен, но оповещения отключены. Установите TELEGRAM_ENABLED=true, чтобы включить.'
-                    : 'Добавьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env, чтобы активировать оповещения.'
-                : 'Проверяем конфигурацию Telegram…'}
+              {devOrchestratorStatus
+                ? `Современная Node.js система управления ${devOrchestratorStatus.length} микросервисами. Замена bash auto-restore.`
+                : 'Новый DevOps сервис для управления разработкой. Проверяем доступность на порту 6050...'}
             </p>
-            {alertStatus?.lastAlerts && alertStatus.lastAlerts.length > 0 && (
+            {devOrchestratorStatus && devOrchestratorStatus.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                Последний алерт: {new Date(alertStatus.lastAlerts[0].lastAlert).toLocaleString('ru-RU')}
+                Активных сервисов: {devOrchestratorStatus.filter((s: any) => s.status === 'running').length} из {devOrchestratorStatus.length}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={alertStatus?.enabled ? 'default' : 'secondary'}>
-              {alertStatus?.enabled ? 'Активно' : 'Отключено'}
+            <Badge variant={devOrchestratorStatus ? 'default' : 'secondary'}>
+              {devOrchestratorStatus ? 'Доступен' : 'Недоступен'}
             </Badge>
             <Button
               variant="outline"
               size="sm"
-              onClick={sendTestAlert}
-              disabled={testAlertInProgress || !(alertStatus?.configured)}
+              onClick={fetchDevOrchestratorStatus}
+              disabled={isDevOrchestratorLoading}
             >
-              {testAlertInProgress ? (
+              {isDevOrchestratorLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <PhoneCall className="w-4 h-4 mr-1" />
+                <RefreshCw className="w-4 h-4 mr-1" />
               )}
-              Тест сигнал
+              Проверить
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="beauty-card border-dashed">
+        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-4">
+          <div>
+            <h3 className="text-sm font-semibold">📱 Telegram Alerts Integration</h3>
+            <p className="text-sm text-muted-foreground">
+              {telegramAlertStatus
+                ? `Система Telegram уведомлений: ${telegramAlertStatus.enabled ? 'активна' : 'отключена'}. Интеграция с Dev Orchestrator.`
+                : 'Проверяем статус интеграции Telegram алертов с Dev Orchestrator...'}
+            </p>
+            {telegramAlertStatus && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                  Bot Token: {telegramAlertStatus.botToken}
+                </span>
+                <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                  Chat ID: {telegramAlertStatus.chatId}
+                </span>
+                <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                  Cooldown: {telegramAlertStatus.cooldownMinutes}m
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={telegramAlertStatus?.enabled ? 'default' : 'secondary'}>
+              {telegramAlertStatus?.enabled ? 'Включен' : 'Отключен'}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTelegramAlertStatus}
+              disabled={isDevOrchestratorLoading}
+            >
+              {isDevOrchestratorLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-1" />
+              )}
+              Проверить
+            </Button>
+            {telegramAlertStatus && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={sendTelegramTest}
+                disabled={isDevOrchestratorLoading || !telegramAlertStatus.enabled}
+                title={!telegramAlertStatus.enabled ? 'Telegram не настроен (нужны TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID)' : 'Отправить тестовое сообщение'}
+              >
+                {isDevOrchestratorLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <PhoneCall className="w-4 h-4 mr-1" />
+                )}
+                Тест
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1168,7 +1411,7 @@ export default function ServicesMonitoringPage() {
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => stopService(service.name)}
-                                      disabled={stopInProgress[service.name] || !supportsAutoRestore(service.name)}
+                                      disabled={stopInProgress[service.name]}
                                       title="Stop service"
                                     >
                                       {stopInProgress[service.name] ? (
@@ -1290,7 +1533,7 @@ export default function ServicesMonitoringPage() {
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => stopService(service.name)}
-                                      disabled={stopInProgress[service.name] || !supportsAutoRestore(service.name)}
+                                      disabled={stopInProgress[service.name]}
                                       title="Stop service"
                                     >
                                       {stopInProgress[service.name] ? (
@@ -1412,7 +1655,7 @@ export default function ServicesMonitoringPage() {
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => stopService(service.name)}
-                                      disabled={stopInProgress[service.name] || !supportsAutoRestore(service.name)}
+                                      disabled={stopInProgress[service.name]}
                                       title="Stop service"
                                     >
                                       {stopInProgress[service.name] ? (
@@ -1452,103 +1695,7 @@ export default function ServicesMonitoringPage() {
               Loading service categories...
             </div>
           )}
-          <div style={{display: 'none'}} className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Service</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Uptime</TableHead>
-                  <TableHead>Response Time</TableHead>
-                  <TableHead>Memory</TableHead>
-                  <TableHead>CPU</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {services.map((service) => {
-                  const Icon = service.icon
-                  return (
-                    <TableRow key={service.name}>
-                      <TableCell className="font-medium">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <Icon className={`w-4 h-4 ${service.color}`} />
-                            <span className="font-semibold">{service.name}</span>
-                            {service.port && (
-                              <Badge variant="outline" className="text-xs">:{service.port}</Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground max-w-xs">
-                            {service.description}
-                          </div>
-                          {service.dependencies && service.dependencies.length > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              Depends: {service.dependencies.join(', ')}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(service.status)}</TableCell>
-                      <TableCell>{service.uptime ? `${Math.floor(service.uptime / 60)}m` : 'N/A'}</TableCell>
-                      <TableCell>{service.responseTime ? `${service.responseTime}ms` : 'N/A'}</TableCell>
-                      <TableCell>
-                        {service.memory ? `${service.memory.used}MB / ${service.memory.total}MB` : 'N/A'}
-                      </TableCell>
-                      <TableCell>{service.cpu ? `${service.cpu}%` : 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => autoRestoreService(service.name)}
-                            disabled={service.status === 'starting' || autoRestoreInProgress[service.name] || !supportsAutoRestore(service.name)}
-                            title="Smart Auto-Restore - Comprehensive service recovery with dependency management"
-                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                          >
-                            {autoRestoreInProgress[service.name] ? (
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Wrench className="w-4 h-4" />
-                            )}
-                            {autoRestoreInProgress[service.name] ? 'Restoring...' : 'Auto-Restore'}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => stopService(service.name)}
-                            disabled={service.status === 'starting' || stopInProgress[service.name] || !supportsAutoRestore(service.name)}
-                            title="Stop service"
-                          >
-                            {stopInProgress[service.name] ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Octagon className="w-4 h-4" />
-                            )}
-                            {stopInProgress[service.name] ? 'Stopping...' : 'Stop'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => restartService(service.name, service.port)}
-                            disabled={service.status === 'starting' || restartInProgress[service.name]}
-                            title="Quick Restart"
-                          >
-                            {restartInProgress[service.name] ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <RotateCcw className="w-4 h-4" />
-                            )}
-                            {restartInProgress[service.name] ? 'Restarting...' : 'Restart'}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          
         </TabsContent>
 
         {/* Circuit Breaker Tab */}

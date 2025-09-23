@@ -1,0 +1,84 @@
+{
+  "services": [
+    {
+      "name": "auth-service",
+      "path": "services/auth-service",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6021,
+      "env": {
+        "MFA_MASTER_KEY": "49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b"
+      }
+    },
+    {
+      "name": "api-gateway",
+      "path": "services/api-gateway",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6020
+    },
+    {
+      "name": "crm-api",
+      "path": "services/crm-api",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6022
+    },
+    {
+      "name": "notification-service",
+      "path": "services/notification-service",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6028
+    },
+    {
+      "name": "salon-crm",
+      "path": "apps/salon-crm",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6001
+    },
+    {
+      "name": "admin-panel",
+      "path": "apps/admin-panel",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6002
+    },
+    {
+      "name": "client-portal",
+      "path": "apps/client-booking",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6003
+    },
+    {
+      "name": "landing-page",
+      "path": "apps/landing-page",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6004
+    },
+    {
+      "name": "images-api",
+      "path": "services/images-api",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6026
+    },
+    {
+      "name": "mcp-server",
+      "path": "services/mcp-server",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6025
+    },
+    {
+      "name": "backup-service",
+      "path": "services/backup-service",
+      "command": "/root/.local/share/pnpm/pnpm",
+      "args": ["dev"],
+      "port": 6027
+    }
+  ]
+}

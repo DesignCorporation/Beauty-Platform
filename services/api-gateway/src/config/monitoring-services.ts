@@ -75,6 +75,18 @@ export const GATEWAY_ROUTED_SERVICES: ServiceConfig[] = [
     gatewayPath: '/api/backup/*',
     description: 'Automated backup and restore system',
     autoRestoreKey: 'backup-service'
+  },
+  {
+    name: 'Notification Service',
+    url: 'http://localhost:6028',
+    healthEndpoint: '/health',
+    critical: false,
+    timeout: 5000,
+    expectedStatus: 200,
+    category: 'gateway-routed',
+    gatewayPath: '/api/notifications/*',
+    description: 'In-app notifications and alerts system',
+    autoRestoreKey: 'notification-service'
   }
 ];
 

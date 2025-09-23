@@ -1,43 +1,78 @@
 #!/bin/bash
-# Beauty Platform Development Server Startup Script
+# Beauty Platform Development Server Startup Script v2.1
 
 echo "🚀 Starting Beauty Platform Development Services..."
 
-# Kill existing processes
-pkill -f "ts-node.*server.ts"
-pkill -f "vite.*6002"
+# --- Config ---
+PROJECT_ROOT="/root/projects/beauty"
 
-# Start Auth Service
-echo "🔐 Starting Auth Service on port 6021..."
-cd /root/beauty-platform/services/auth-service
-JWT_SECRET="your-super-secret-jwt-key-change-in-production-beauty-platform-2025" \
-JWT_REFRESH_SECRET="your-super-secret-refresh-key-change-in-production-beauty-platform-2025" \
-NODE_ENV=development \
-npx ts-node src/server.ts &
+# --- Force Kill Old Processes on Ports ---
+echo "🛑 Force stopping any processes on required ports..."
+kill -9 $(lsof -t -i:6021) 2>/dev/null || true
+kill -9 $(lsof -t -i:6020) 2>/dev/null || true
+kill -9 $(lsof -t -i:6022) 2>/dev/null || true
+kill -9 $(lsof -t -i:6028) 2>/dev/null || true
+kill -9 $(lsof -t -i:6001) 2>/dev/null || true
+sleep 1 # Give a moment for ports to free up
 
-# Wait for Auth Service to start
-sleep 3
+# --- Function to wait for a service ---
+wait_for_service() {
+  local name=$1
+  local port=$2
+  echo -n "⏳ Waiting for $name on port $port..."
+  for i in {1..30}; do
+    # Use curl's silent and fail-fast options
+    if curl -sf --connect-timeout 2 "http://localhost:$port/health" > /dev/null; then
+      echo " ✅ UP!"
+      return 0
+    fi
+    sleep 1
+  done
+  echo " ❌ FAILED to start after 30 seconds."
+  return 1
+}
 
-# Start Admin Panel
-echo "🌐 Starting Admin Panel on port 6002..."
-cd /root/beauty-platform/apps/admin-panel
-npm run dev -- --host 0.0.0.0 --port 6002 &
+# --- Start Backend Services ---
+echo "--- Starting Backend Services ---"
 
-# Wait for services to start
-sleep 5
+# Auth Service (Port 6021)
+echo "🔐 Starting Auth Service..."
+cd "$PROJECT_ROOT/services/auth-service"
+MFA_MASTER_KEY="49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b" nohup pnpm dev > "$PROJECT_ROOT/logs/auth-dev.log" 2>&1 &
 
-# Check services
-echo "📊 Checking services status..."
-echo "Auth Service: $(curl -s http://localhost:6021/health | grep -o '"success":true' || echo '❌ FAILED')"
-echo "Admin Panel: $(curl -s -I http://localhost:6002 | grep -o 'HTTP/1.1 200 OK' || echo '❌ FAILED')"
+# API Gateway (Port 6020)
+echo "🌐 Starting API Gateway..."
+cd "$PROJECT_ROOT/services/api-gateway"
+nohup pnpm dev > "$PROJECT_ROOT/logs/gateway-dev.log" 2>&1 &
+
+# CRM API (Port 6022)
+echo "💼 Starting CRM API..."
+cd "$PROJECT_ROOT/services/crm-api"
+nohup pnpm dev > "$PROJECT_ROOT/logs/crm-api-dev.log" 2>&1 &
+
+# Notification Service (Port 6028)
+echo "🔔 Starting Notification Service..."
+cd "$PROJECT_ROOT/services/notification-service"
+nohup pnpm dev > "$PROJECT_ROOT/logs/notification-dev.log" 2>&1 &
+
+# --- Wait for Backend ---
+wait_for_service "Auth Service" 6021
+wait_for_service "API Gateway" 6020
+wait_for_service "CRM API" 6022
+wait_for_service "Notification Service" 6028
+
+# --- Start Frontend ---
+echo "--- Starting Frontend ---"
+echo "🎨 Starting Salon CRM Frontend on port 6001..."
+cd "$PROJECT_ROOT/apps/salon-crm"
+nohup pnpm dev > "$PROJECT_ROOT/logs/crm-fe-dev.log" 2>&1 &
 
 echo ""
-echo "✅ Beauty Platform Development Services Started!"
-echo "🔐 Auth Service: http://localhost:6021"
-echo "🌐 Admin Panel: http://localhost:6002"
+echo "✅ All development services initiated."
+echo "You can monitor logs in '$PROJECT_ROOT/logs/'"
 echo ""
-echo "Test credentials:"
-echo "Email: admin@beauty-platform.com"
-echo "Password: admin123"
+echo "🔗 Endpoints:"
+echo "  - 🎨 Salon CRM (Frontend): http://localhost:6001"
+echo "  - 🌐 API Gateway:          http://localhost:6020"
 echo ""
-echo "To stop services: pkill -f ts-node && pkill -f vite"
+echo "To stop all services, run: pkill -f 'pnpm dev'"

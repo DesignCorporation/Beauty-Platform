@@ -247,7 +247,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <div className="flex items-center gap-4">
               {/* Notification Bell */}
               <NotificationBell
-                serviceUrl=""
+                serviceUrl={import.meta.env.VITE_API_URL || ''}
                 size="default"
                 variant="ghost"
                 maxNotifications={5}

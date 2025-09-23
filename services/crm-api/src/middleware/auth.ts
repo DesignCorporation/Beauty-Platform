@@ -12,7 +12,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-beauty-platform-2025';
-const AUTH_LOG_PATH = process.env.CRM_AUTH_LOG_PATH || '/root/beauty-platform/logs/crm-api-auth.log';
+const AUTH_LOG_PATH = process.env.CRM_AUTH_LOG_PATH || '/root/projects/beauty/logs/crm-api-auth.log';
 
 const writeAuthLog = (data: Record<string, unknown>) => {
   try {
