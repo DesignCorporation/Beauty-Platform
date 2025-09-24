@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import healthRoutes from './routes/health';
 import subscriptionRoutes from './routes/subscriptions';
 import webhookRoutes from './routes/webhooks';
+import refundRoutes from './routes/refunds';
 
 // Load environment variables
 dotenv.config();
@@ -91,6 +92,7 @@ app.use((req, res, next) => {
 app.use('/', healthRoutes);                    // Health check (public)
 app.use('/webhooks', webhookRoutes);           // Stripe webhooks (raw body)
 app.use('/api/subscriptions', subscriptionRoutes); // Subscription management (protected)
+app.use('/api/refunds', refundRoutes);         // Refunds API (protected)
 
 // 🏠 Root endpoint
 app.get('/', (req, res) => {
@@ -102,6 +104,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       subscriptions: '/api/subscriptions',
+      refunds: '/api/refunds',
       webhooks: '/webhooks/stripe'
     }
   });

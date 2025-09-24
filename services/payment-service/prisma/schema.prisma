@@ -61,6 +61,8 @@ model Payment {
 
   // Relations
   subscription           Subscription? @relation(fields: [subscriptionId], references: [id])
+  refunds                Refund[]      // Payment can have multiple refunds
+  events                 PaymentEvent[] // Payment can have multiple events
 
   @@index([tenantId])
   @@index([subscriptionId])
@@ -106,4 +108,111 @@ model Invoice {
   @@index([invoiceNumber])
   @@index([status])
   @@map("invoices")
+}
+
+// 🔄 Возвраты средств (Stage 5)
+model Refund {
+  id                String    @id @default(cuid())
+  tenantId          String    // 🔐 КРИТИЧНО: Tenant isolation
+  paymentId         String    // Reference to Payment
+
+  // Provider refund data
+  provider          String    // "stripe" | "paypal"
+  providerRefundId  String?   // Provider's refund ID
+
+  // Amount and currency
+  amount            Int       // Amount in cents/units
+  currency          String    @default("EUR")
+
+  // Status tracking
+  status            String    @default("pending") // pending, succeeded, failed
+  reason            String?   // Optional refund reason
+
+  // Metadata
+  metadata          Json?     // Additional provider data
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  payment           Payment?  @relation(fields: [paymentId], references: [id])
+  events            PaymentEvent[] // For webhook deduplication
+
+  @@index([tenantId])
+  @@index([paymentId])
+  @@index([providerRefundId])
+  @@index([status])
+  @@map("refunds")
+}
+
+// 📧 Email delivery tracking (Stage 5)
+model InvoiceEmail {
+  id              String    @id @default(cuid())
+  tenantId        String    // 🔐 КРИТИЧНО: Tenant isolation
+  paymentId       String    // Reference to Payment
+
+  // Email data
+  recipientEmail  String    // Recipient email address
+  locale          String    @default("ru") // ru | en
+
+  // Status tracking
+  status          String    @default("queued") // queued, sent, failed
+  sentAt          DateTime?
+  errorMessage    String?   // Error details if failed
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([paymentId])
+  @@index([status])
+  @@map("invoice_emails")
+}
+
+// 📝 Payment events for webhook deduplication (Stage 5)
+model PaymentEvent {
+  id            String    @id @default(cuid())
+  tenantId      String?   // Optional: events can be global
+
+  // Provider event data
+  provider      String    // "stripe" | "paypal"
+  eventType     String    // Provider event type
+  eventId       String    @unique // Provider event ID (for deduplication)
+
+  // Related entities
+  paymentId     String?   // Optional payment reference
+  refundId      String?   // Optional refund reference
+
+  // Event payload
+  payload       Json      // Full webhook payload
+  processed     Boolean   @default(false)
+
+  // Metadata
+  receivedAt    DateTime  @default(now())
+
+  // Relations
+  payment       Payment?  @relation(fields: [paymentId], references: [id])
+  refund        Refund?   @relation(fields: [refundId], references: [id])
+
+  @@index([eventId]) // For fast deduplication lookup
+  @@index([provider, eventType])
+  @@index([paymentId])
+  @@index([refundId])
+  @@map("payment_events")
+}
+
+// 🔑 Idempotency keys for API requests (24h TTL)
+model IdempotencyKey {
+  id           String    @id @default(cuid())
+  key          String    // Client-provided idempotency key
+  tenantId     String    // Tenant isolation
+  requestHash  String    // SHA256 of request data
+  response     Json      // Cached response
+  expiresAt    DateTime  // Auto-cleanup after 24h
+  createdAt    DateTime  @default(now())
+
+  @@unique([key, tenantId]) // Same key can exist for different tenants
+  @@index([key, tenantId])  // Fast lookup
+  @@index([expiresAt])      // For cleanup queries
+  @@map("idempotency_keys")
 }
