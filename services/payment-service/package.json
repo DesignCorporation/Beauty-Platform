@@ -9,6 +9,8 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "@beauty-platform/shared-middleware": "workspace:*",
+    "dotenv": "^16.4.5"
   }
 }
