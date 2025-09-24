@@ -1,7 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { setupAuth } from '@beauty-platform/shared-middleware';
-import { tenantPrisma } from '@beauty-platform/database';
+import pkg from '@beauty-platform/database';
+const { tenantPrisma, prisma: globalPrisma } = pkg;
 import { createIntent as createStripeIntent, parseWebhookEvent as parseStripeWebhook, mapEventToStatus as mapStripeStatus } from './providers/stripeProvider.js';
 import { createIntent as createPaypalIntent, parseWebhookEvent as parsePaypalWebhook, mapEventToStatus as mapPaypalStatus } from './providers/paypalProvider.js';
 import { idempotencyMiddleware } from './middleware/idempotency.js';
@@ -31,6 +32,55 @@ app.get('/health', (_req, res) => {
 });
 
 // ========================================
+// WEBHOOK HELPER FUNCTIONS
+// ========================================
+
+/**
+ * Extract provider payment ID from Stripe webhook event
+ * @param {Object} event - Parsed Stripe webhook event
+ * @returns {string|null} Provider payment ID or null
+ */
+function resolveStripePaymentId(event) {
+  // Different event types store payment ID in different places
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+    case 'payment_intent.payment_failed':
+    case 'payment_intent.canceled':
+    case 'payment_intent.requires_action':
+    case 'payment_intent.processing':
+      return event.paymentId || event.rawEvent?.data?.object?.id;
+    case 'charge.succeeded':
+    case 'charge.failed':
+      return event.rawEvent?.data?.object?.payment_intent;
+    default:
+      return event.paymentId || event.rawEvent?.data?.object?.id;
+  }
+}
+
+/**
+ * Extract provider payment ID from PayPal webhook event
+ * @param {Object} event - Parsed PayPal webhook event
+ * @returns {string|null} Provider payment ID or null
+ */
+function resolvePayPalPaymentId(event) {
+  // Different event types store payment ID in different places
+  const resource = event.rawEvent?.resource;
+  if (!resource) return null;
+
+  switch (event.type) {
+    case 'PAYMENT.CAPTURE.COMPLETED':
+    case 'PAYMENT.CAPTURE.DENIED':
+    case 'PAYMENT.CAPTURE.PENDING':
+      return resource.id;
+    case 'CHECKOUT.ORDER.APPROVED':
+    case 'CHECKOUT.ORDER.CANCELLED':
+      return resource.id;
+    default:
+      return resource.id;
+  }
+}
+
+// ========================================
 // WEBHOOK ENDPOINTS (Raw Body)
 // ========================================
 
@@ -39,9 +89,8 @@ app.post('/webhooks/stripe', async (req, res) => {
   try {
     const event = parseStripeWebhook(req.body, req.headers);
 
-    // Check for duplicate events in database
-    const db = tenantPrisma(null); // Webhooks are global
-    const existingEvent = await db.paymentEvent.findFirst({
+    // Check for duplicate events globally
+    const existingEvent = await globalPrisma.paymentEvent.findFirst({
       where: { eventId: event.eventId }
     });
 
@@ -50,36 +99,47 @@ app.post('/webhooks/stripe', async (req, res) => {
       return res.status(200).json({ received: true, duplicate: true });
     }
 
-    // Process the event and update payment status
+    // Extract provider payment ID from Stripe event
+    const providerPaymentId = resolveStripePaymentId(event);
+    if (!providerPaymentId) {
+      console.log(`[Stripe] No payment ID found in event: ${event.type}`);
+      return res.status(200).json({ received: true });
+    }
+
+    // Find payment globally by provider and providerId
+    const payment = await globalPrisma.payment.findFirst({
+      where: {
+        provider: 'STRIPE',
+        providerId: providerPaymentId
+      }
+    });
+
+    if (!payment) {
+      console.warn(`[Stripe] Payment not found for providerId: ${providerPaymentId}`);
+      return res.status(200).json({ received: true });
+    }
+
+    // Now work with tenant-isolated client
+    const tenantDb = tenantPrisma(payment.tenantId);
     const newStatus = mapStripeStatus(event.type);
     let updatedPayment = null;
 
-    if (event.paymentId && newStatus !== 'unknown') {
-      // Find payment by providerId across all tenants
-      const payment = await db.$queryRaw`
-        SELECT * FROM payments WHERE provider_id = ${event.paymentId} LIMIT 1
-      `;
+    if (newStatus !== 'unknown') {
+      updatedPayment = await tenantDb.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: newStatus,
+          providerId: providerPaymentId // Ensure it's set
+        }
+      });
 
-      if (payment.length > 0) {
-        const paymentRecord = payment[0];
-        const tenantDb = tenantPrisma(paymentRecord.tenant_id);
-
-        updatedPayment = await tenantDb.payment.update({
-          where: { id: paymentRecord.id },
-          data: {
-            status: newStatus,
-            providerId: event.paymentId // Update if not set
-          }
-        });
-
-        console.log(`[Stripe] Updated payment ${paymentRecord.id} status: ${newStatus}`);
-      }
+      console.log(`[Stripe] Updated payment ${payment.id} status: ${newStatus}`);
     }
 
-    // Create payment event record
-    await db.paymentEvent.create({
+    // Create payment event record (globally, no tenant isolation)
+    await globalPrisma.paymentEvent.create({
       data: {
-        paymentId: updatedPayment?.id || null,
+        paymentId: payment.id,
         provider: 'stripe',
         eventType: event.type,
         eventId: event.eventId,
@@ -101,9 +161,8 @@ app.post('/webhooks/paypal', async (req, res) => {
   try {
     const event = parsePaypalWebhook(req.body, req.headers);
 
-    // Check for duplicate events in database
-    const db = tenantPrisma(null); // Webhooks are global
-    const existingEvent = await db.paymentEvent.findFirst({
+    // Check for duplicate events globally
+    const existingEvent = await globalPrisma.paymentEvent.findFirst({
       where: { eventId: event.eventId }
     });
 
@@ -112,36 +171,47 @@ app.post('/webhooks/paypal', async (req, res) => {
       return res.status(200).json({ received: true, duplicate: true });
     }
 
-    // Process the event and update payment status
+    // Extract provider payment ID from PayPal event
+    const providerPaymentId = resolvePayPalPaymentId(event);
+    if (!providerPaymentId) {
+      console.log(`[PayPal] No payment ID found in event: ${event.type}`);
+      return res.status(200).json({ received: true });
+    }
+
+    // Find payment globally by provider and providerId
+    const payment = await globalPrisma.payment.findFirst({
+      where: {
+        provider: 'PAYPAL',
+        providerId: providerPaymentId
+      }
+    });
+
+    if (!payment) {
+      console.warn(`[PayPal] Payment not found for providerId: ${providerPaymentId}`);
+      return res.status(200).json({ received: true });
+    }
+
+    // Now work with tenant-isolated client
+    const tenantDb = tenantPrisma(payment.tenantId);
     const newStatus = mapPaypalStatus(event.type);
     let updatedPayment = null;
 
-    if (event.paymentId && newStatus !== 'unknown') {
-      // Find payment by providerId across all tenants
-      const payment = await db.$queryRaw`
-        SELECT * FROM payments WHERE provider_id = ${event.paymentId} LIMIT 1
-      `;
+    if (newStatus !== 'unknown') {
+      updatedPayment = await tenantDb.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: newStatus,
+          providerId: providerPaymentId // Ensure it's set
+        }
+      });
 
-      if (payment.length > 0) {
-        const paymentRecord = payment[0];
-        const tenantDb = tenantPrisma(paymentRecord.tenant_id);
-
-        updatedPayment = await tenantDb.payment.update({
-          where: { id: paymentRecord.id },
-          data: {
-            status: newStatus,
-            providerId: event.paymentId // Update if not set
-          }
-        });
-
-        console.log(`[PayPal] Updated payment ${paymentRecord.id} status: ${newStatus}`);
-      }
+      console.log(`[PayPal] Updated payment ${payment.id} status: ${newStatus}`);
     }
 
-    // Create payment event record
-    await db.paymentEvent.create({
+    // Create payment event record (globally, no tenant isolation)
+    await globalPrisma.paymentEvent.create({
       data: {
-        paymentId: updatedPayment?.id || null,
+        paymentId: payment.id,
         provider: 'paypal',
         eventType: event.type,
         eventId: event.eventId,
