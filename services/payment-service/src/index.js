@@ -1,22 +1,24 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { setupAuth } from '@beauty-platform/shared-middleware';
-import * as stripeProvider from './providers/stripeProvider.js';
-import * as paypalProvider from './providers/paypalProvider.js';
+import { createIntent as createStripeIntent, parseWebhookEvent as parseStripeWebhook } from './providers/stripeProvider.js';
+import { createIntent as createPaypalIntent, parseWebhookEvent as parsePaypalWebhook } from './providers/paypalProvider.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 
-// In-memory store for processed webhook events (idempotency)
-const processedWebhookEvents = new Set();
+// In-memory deduplication
+const processed = new Set();
+const isDuplicate = (id) => processed.has(id);
+const markProcessed = (id) => processed.add(id);
 
 // Raw body only for webhooks (no JSON parsing)
 app.use('/webhooks', express.raw({ type: '*/*' }));
 
 // JSON parsing for API endpoints
-app.use('/api', express.json());
+app.use(express.json());
 
 // Integrate shared middleware
 const auth = setupAuth('payment-service');
@@ -33,64 +35,27 @@ app.get('/health', (_req, res) => {
 
 // Stripe webhook endpoint
 app.post('/webhooks/stripe', (req, res) => {
-  try {
-    const event = stripeProvider.parseWebhookEvent(req.body, req.headers);
+  const sig = req.headers['stripe-signature'];
+  if (!sig) return res.status(400).json({ error: 'Stripe-Signature required' });
 
-    if (!event) {
-      return res.status(400).json({ error: 'Invalid webhook signature or payload' });
-    }
+  const evt = parseStripeWebhook(req.body, req.headers);
+  if (isDuplicate(evt.eventId)) return res.status(200).end();
 
-    // Check for duplicate events (idempotency)
-    if (processedWebhookEvents.has(event.id)) {
-      console.log(`[Stripe] Duplicate webhook event ignored: ${event.id}`);
-      return res.status(200).json({ received: true, duplicate: true });
-    }
-
-    // Process the event
-    console.log(`[Stripe] Processing webhook event: ${event.type} (${event.id})`);
-    processedWebhookEvents.add(event.id);
-
-    // TODO: Implement actual webhook processing logic
-    // - Update payment status in database
-    // - Send notifications
-    // - Trigger business logic
-
-    res.status(200).json({ received: true });
-  } catch (error) {
-    console.error('[Stripe] Webhook processing error:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  markProcessed(evt.eventId);
+  return res.status(200).end();
 });
 
 // PayPal webhook endpoint
 app.post('/webhooks/paypal', (req, res) => {
-  try {
-    const event = paypalProvider.parseWebhookEvent(req.body, req.headers);
+  const tid = req.headers['paypal-transmission-id'];
+  const tsig = req.headers['paypal-transmission-sig'];
+  if (!tid || !tsig) return res.status(400).json({ error: 'PayPal headers required' });
 
-    if (!event) {
-      return res.status(400).json({ error: 'Invalid webhook signature or payload' });
-    }
+  const evt = parsePaypalWebhook(req.body, req.headers);
+  if (isDuplicate(evt.eventId)) return res.status(200).end();
 
-    // Check for duplicate events (idempotency)
-    if (processedWebhookEvents.has(event.id)) {
-      console.log(`[PayPal] Duplicate webhook event ignored: ${event.id}`);
-      return res.status(200).json({ received: true, duplicate: true });
-    }
-
-    // Process the event
-    console.log(`[PayPal] Processing webhook event: ${event.event_type} (${event.id})`);
-    processedWebhookEvents.add(event.id);
-
-    // TODO: Implement actual webhook processing logic
-    // - Update payment status in database
-    // - Send notifications
-    // - Trigger business logic
-
-    res.status(200).json({ received: true });
-  } catch (error) {
-    console.error('[PayPal] Webhook processing error:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  markProcessed(evt.eventId);
+  return res.status(200).end();
 });
 
 // ========================================
@@ -99,30 +64,10 @@ app.post('/webhooks/paypal', (req, res) => {
 
 // Create payment intent with provider delegation
 app.post('/api/payments/intents', async (req, res) => {
-  try {
-    const { amount, currency = 'EUR', provider = 'stripe', customerId, metadata } = req.body || {};
-
-    if (!amount) {
-      return res.status(400).json({ error: 'amount required' });
-    }
-
-    if (!['stripe', 'paypal'].includes(provider)) {
-      return res.status(400).json({ error: 'provider must be stripe or paypal' });
-    }
-
-    // Delegate to appropriate provider
-    let paymentIntent;
-    if (provider === 'stripe') {
-      paymentIntent = await stripeProvider.createIntent({ amount, currency, customerId, metadata });
-    } else {
-      paymentIntent = await paypalProvider.createIntent({ amount, currency, customerId, metadata });
-    }
-
-    res.status(201).json(paymentIntent);
-  } catch (error) {
-    console.error('[API] Error creating payment intent:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  const { provider = 'stripe' } = req.body || {};
+  const fn = provider === 'paypal' ? createPaypalIntent : createStripeIntent;
+  const result = await fn(req.body);
+  return res.status(201).json(result);
 });
 
 // Get payment by ID (structural compatibility, still mock)

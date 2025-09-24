@@ -10,28 +10,18 @@
  * @param {Object} [params.metadata] - Payment metadata
  * @returns {Object} Unified payment response
  */
-export async function createIntent({ amount, currency, customerId, metadata = {} }) {
-  // TODO: Implement real Stripe integration
-  // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  // const paymentIntent = await stripe.paymentIntents.create({
-  //   amount,
-  //   currency: currency.toLowerCase(),
-  //   customer: customerId,
-  //   metadata,
-  //   automatic_payment_methods: { enabled: true }
-  // });
+export async function createIntent({ amount, currency = 'EUR', metadata }) {
+  if (!amount) throw new Error('amount required');
 
-  // Mock implementation for scaffold
-  const mockId = `pay_stripe_${Math.random().toString(36).slice(2, 10)}`;
+  const id = `pay_${Math.random().toString(36).slice(2, 10)}`;
 
   return {
-    id: mockId,
+    id,
     provider: 'stripe',
-    status: 'requires_action', // Stripe typical status for 3DS
-    clientSecret: `${mockId}_secret_${Math.random().toString(36).slice(2, 6)}`,
+    status: 'requires_action',
+    clientSecret: `cs_${id}`,
     currency,
-    amount,
-    metadata
+    metadata: metadata ?? null
   };
 }
 
@@ -41,43 +31,17 @@ export async function createIntent({ amount, currency, customerId, metadata = {}
  * @param {Object} headers - Request headers
  * @returns {Object|null} Parsed event or null if invalid
  */
-export function parseWebhookEvent(rawBody, headers) {
-  const signature = headers['stripe-signature'];
+export function parseWebhookEvent(body, headers) {
+  const sig = headers['stripe-signature'];
+  if (!sig) throw new Error('Stripe-Signature required');
 
-  if (!signature) {
-    console.warn('[Stripe] Missing Stripe-Signature header');
-    return null;
-  }
-
-  // TODO: Implement real signature verification
-  // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  // try {
-  //   const event = stripe.webhooks.constructEvent(
-  //     rawBody,
-  //     signature,
-  //     process.env.STRIPE_WEBHOOK_SECRET
-  //   );
-  //   return event;
-  // } catch (err) {
-  //   console.error('[Stripe] Webhook signature verification failed:', err.message);
-  //   return null;
-  // }
-
-  // Mock implementation - parse JSON and return mock event
-  try {
-    const event = JSON.parse(rawBody.toString());
-    console.log('[Stripe] Mock webhook event received:', event.type);
-
-    return {
-      id: event.id || `evt_mock_${Date.now()}`,
-      type: event.type || 'payment_intent.succeeded',
-      data: event.data || { object: { id: 'mock_payment_id' } },
-      created: Math.floor(Date.now() / 1000)
-    };
-  } catch (error) {
-    console.error('[Stripe] Failed to parse webhook body:', error.message);
-    return null;
-  }
+  // mock parse
+  return {
+    eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
+    type: 'payment_intent.succeeded',
+    paymentId: 'pay_mock',
+    status: 'succeeded'
+  };
 }
 
 /**

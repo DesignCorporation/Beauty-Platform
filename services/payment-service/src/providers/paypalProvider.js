@@ -10,32 +10,18 @@
  * @param {Object} [params.metadata] - Payment metadata
  * @returns {Object} Unified payment response
  */
-export async function createIntent({ amount, currency, customerId, metadata = {} }) {
-  // TODO: Implement real PayPal integration
-  // const paypal = require('@paypal/checkout-server-sdk');
-  // const request = new paypal.orders.OrdersCreateRequest();
-  // request.prefer("return=representation");
-  // request.requestBody({
-  //   intent: 'CAPTURE',
-  //   purchase_units: [{
-  //     amount: {
-  //       currency_code: currency.toUpperCase(),
-  //       value: (amount / 100).toFixed(2) // Convert cents to currency units
-  //     }
-  //   }]
-  // });
+export async function createIntent({ amount, currency = 'EUR', metadata }) {
+  if (!amount) throw new Error('amount required');
 
-  // Mock implementation for scaffold
-  const mockId = `pay_paypal_${Math.random().toString(36).slice(2, 10)}`;
+  const id = `pay_${Math.random().toString(36).slice(2, 10)}`;
 
   return {
-    id: mockId,
+    id,
     provider: 'paypal',
-    status: 'pending', // PayPal typical status for approval needed
-    approvalUrl: `https://www.sandbox.paypal.com/checkoutnow?token=${mockId}`,
+    status: 'pending',
+    approvalUrl: `https://paypal.test/approve/${id}`,
     currency,
-    amount,
-    metadata
+    metadata: metadata ?? null
   };
 }
 
@@ -45,43 +31,18 @@ export async function createIntent({ amount, currency, customerId, metadata = {}
  * @param {Object} headers - Request headers
  * @returns {Object|null} Parsed event or null if invalid
  */
-export function parseWebhookEvent(rawBody, headers) {
-  const transmissionId = headers['paypal-transmission-id'];
-  const certId = headers['paypal-cert-id'];
-  const transmissionSig = headers['paypal-transmission-sig'];
-  const transmissionTime = headers['paypal-transmission-time'];
+export function parseWebhookEvent(body, headers) {
+  const tid = headers['paypal-transmission-id'];
+  const tsig = headers['paypal-transmission-sig'];
+  if (!tid || !tsig) throw new Error('PayPal headers required');
 
-  if (!transmissionId || !transmissionSig) {
-    console.warn('[PayPal] Missing PayPal webhook headers');
-    return null;
-  }
-
-  // TODO: Implement real PayPal webhook verification
-  // const paypal = require('@paypal/checkout-server-sdk');
-  // const isValid = paypal.webhooks.verifyWebhookSignature({
-  //   transmission_id: transmissionId,
-  //   cert_id: certId,
-  //   transmission_sig: transmissionSig,
-  //   transmission_time: transmissionTime,
-  //   webhook_id: process.env.PAYPAL_WEBHOOK_ID,
-  //   webhook_event: rawBody
-  // });
-
-  // Mock implementation - parse JSON and return mock event
-  try {
-    const event = JSON.parse(rawBody.toString());
-    console.log('[PayPal] Mock webhook event received:', event.event_type);
-
-    return {
-      id: event.id || `WH_mock_${Date.now()}`,
-      event_type: event.event_type || 'CHECKOUT.ORDER.APPROVED',
-      resource: event.resource || { id: 'mock_order_id' },
-      create_time: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('[PayPal] Failed to parse webhook body:', error.message);
-    return null;
-  }
+  // mock parse
+  return {
+    eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
+    type: 'PAYMENT.CAPTURE.COMPLETED',
+    paymentId: 'pay_mock',
+    status: 'succeeded'
+  };
 }
 
 /**

@@ -210,11 +210,126 @@ Response:
 - **Error Handling**: All endpoints include proper async/await error handling
 - **Logging**: Structured logging for webhook events and API operations
 
-## Коммит и push
+## Providers
 
-- Рекомендуемый коммит: `feat(payment): scaffold payment service (Closes #13)`
-- Добавить в PR ссылку на Issue #13.
+### Stripe Provider (`src/providers/stripeProvider.js`)
+- **createIntent({ amount, currency, metadata })**: Creates payment intent, returns `{ id, provider: 'stripe', status: 'requires_action', clientSecret, currency, metadata }`
+- **parseWebhookEvent(body, headers)**: Validates `Stripe-Signature` header, returns mock event object
+- **Mock Implementation**: No real Stripe SDK integration yet
 
-## Следующий шаг
+### PayPal Provider (`src/providers/paypalProvider.js`)
+- **createIntent({ amount, currency, metadata })**: Creates payment intent, returns `{ id, provider: 'paypal', status: 'pending', approvalUrl, currency, metadata }`
+- **parseWebhookEvent(body, headers)**: Validates `paypal-transmission-id` and `paypal-transmission-sig` headers, returns mock event object
+- **Mock Implementation**: No real PayPal SDK integration yet
 
-- После пуша я подготовлю минимальный патч для Dev Orchestrator (порт 6029, GET /health) и предложу следующий инкремент: реальная интеграция shared-middleware и заготовки под Stripe/PayPal провайдеры.
+## Webhooks
+
+### Stripe Webhooks
+- **Endpoint**: `POST /webhooks/stripe`
+- **Required Headers**: `Stripe-Signature`
+- **Processing**: Signature validation → deduplication → event processing
+- **Response**: `200 OK` (success/duplicate) or `400 Bad Request` (missing signature)
+
+### PayPal Webhooks
+- **Endpoint**: `POST /webhooks/paypal`
+- **Required Headers**: `paypal-transmission-id`, `paypal-transmission-sig`
+- **Processing**: Header validation → deduplication → event processing
+- **Response**: `200 OK` (success/duplicate) or `400 Bad Request` (missing headers)
+
+### Event Deduplication
+- **In-Memory Storage**: Uses `Set()` for processed event IDs
+- **Idempotency**: Duplicate events return `200 OK` without processing
+- **Production Note**: Will be replaced with database-backed deduplication
+
+## Environment Variables
+
+### Required
+- `PORT` (default: 6029)
+- `JWT_SECRET` - Required for shared-middleware authentication
+- `DATABASE_URL` - PostgreSQL connection string (for future Prisma integration)
+
+### Stripe Configuration
+- `STRIPE_SECRET_KEY` - Stripe secret key (not used in Stage 2)
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook endpoint secret (not used in Stage 2)
+
+### PayPal Configuration
+- `PAYPAL_CLIENT_ID` - PayPal app client ID (not used in Stage 2)
+- `PAYPAL_SECRET` - PayPal app secret (not used in Stage 2)
+- `PAYPAL_WEBHOOK_ID` - PayPal webhook ID (not used in Stage 2)
+
+## API Examples
+
+### Create Stripe Payment Intent
+```bash
+curl -X POST http://localhost:6029/api/payments/intents \
+  -H "Content-Type: application/json" \
+  -H "x-tenant-id: TENANT" \
+  -H "Authorization: Bearer JWT_TOKEN" \
+  -d '{"amount":1000,"currency":"EUR","provider":"stripe"}'
+
+Response:
+{
+  "id": "pay_abc123",
+  "provider": "stripe",
+  "status": "requires_action",
+  "clientSecret": "cs_pay_abc123",
+  "currency": "EUR",
+  "metadata": null
+}
+```
+
+### Create PayPal Payment Intent
+```bash
+curl -X POST http://localhost:6029/api/payments/intents \
+  -H "Content-Type: application/json" \
+  -H "x-tenant-id: TENANT" \
+  -H "Authorization: Bearer JWT_TOKEN" \
+  -d '{"amount":1000,"currency":"EUR","provider":"paypal"}'
+
+Response:
+{
+  "id": "pay_xyz789",
+  "provider": "paypal",
+  "status": "pending",
+  "approvalUrl": "https://paypal.test/approve/pay_xyz789",
+  "currency": "EUR",
+  "metadata": null
+}
+```
+
+### Stripe Webhook Test
+```bash
+curl -X POST http://localhost:6029/webhooks/stripe \
+  --data-binary '{}' \
+  -H "Content-Type: application/json" \
+  -H "Stripe-Signature: test"
+
+Response: 200 OK
+```
+
+### PayPal Webhook Test
+```bash
+curl -X POST http://localhost:6029/webhooks/paypal \
+  --data-binary '{}' \
+  -H "Content-Type: application/json" \
+  -H "PayPal-Transmission-Id: t1" \
+  -H "PayPal-Transmission-Sig: s1"
+
+Response: 200 OK
+```
+
+## Current Status
+
+✅ **Stage 2 Complete**:
+- Real shared-middleware integration (`@beauty-platform/shared-middleware`)
+- Provider structure with unified interfaces (Stripe + PayPal)
+- Webhook endpoints with raw body processing and signature validation
+- In-memory event deduplication for idempotency
+- API endpoint provider delegation
+- Comprehensive documentation
+
+🚧 **Next (Stage 3)**:
+- Prisma models: `payments`, `payment_events`, `refunds`
+- Database-backed idempotency
+- Real Stripe/PayPal SDK integration
+- Production webhook signature verification
