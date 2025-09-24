@@ -318,18 +318,149 @@ curl -X POST http://localhost:6029/webhooks/paypal \
 Response: 200 OK
 ```
 
+## Database Models
+
+### Payment Model
+```sql
+CREATE TABLE payments (
+  id         UUID PRIMARY KEY,
+  provider   VARCHAR NOT NULL,           -- 'STRIPE', 'PAYPAL'
+  provider_id VARCHAR,                   -- Provider's payment ID
+  amount     INTEGER NOT NULL,           -- Amount in cents/units
+  currency   VARCHAR NOT NULL,           -- 'EUR', 'USD', 'PLN'
+  status     VARCHAR NOT NULL,           -- 'created', 'succeeded', 'failed', etc.
+  tenant_id  VARCHAR NOT NULL,           -- Tenant isolation
+  customer_id VARCHAR,                   -- Optional customer reference
+  metadata   JSONB,                      -- Additional data
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### PaymentEvent Model (Webhook Deduplication)
+```sql
+CREATE TABLE payment_events (
+  id         UUID PRIMARY KEY,
+  payment_id VARCHAR,                    -- Reference to payment
+  provider   VARCHAR NOT NULL,           -- 'stripe', 'paypal'
+  event_type VARCHAR NOT NULL,           -- Provider event type
+  event_id   VARCHAR UNIQUE NOT NULL,    -- Provider event ID (for deduplication)
+  payload    JSONB,                      -- Full webhook payload
+  received_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Refund Model
+```sql
+CREATE TABLE refunds (
+  id                 UUID PRIMARY KEY,
+  payment_id         VARCHAR NOT NULL,
+  amount             INTEGER NOT NULL,      -- Refund amount
+  status             VARCHAR NOT NULL,      -- 'pending', 'succeeded', 'failed'
+  reason             VARCHAR,              -- Optional refund reason
+  provider_refund_id VARCHAR,              -- Provider's refund ID
+  created_at         TIMESTAMP DEFAULT NOW(),
+  updated_at         TIMESTAMP DEFAULT NOW()
+);
+```
+
+### IdempotencyKey Model (24h TTL)
+```sql
+CREATE TABLE idempotency_keys (
+  key          VARCHAR PRIMARY KEY,      -- Client-provided idempotency key
+  tenant_id    VARCHAR NOT NULL,         -- Tenant isolation
+  request_hash VARCHAR NOT NULL,         -- SHA256 of request data
+  response     JSONB NOT NULL,           -- Cached response
+  created_at   TIMESTAMP DEFAULT NOW(),
+  expires_at   TIMESTAMP NOT NULL        -- Auto-cleanup after 24h
+);
+```
+
+## Idempotency System
+
+### How It Works
+1. **Client sends `Idempotency-Key` header** with POST requests
+2. **System generates request hash** from method + path + stable body
+3. **Database check**: If key exists and not expired, return cached response
+4. **Process request**: If new, execute normally and cache response with 24h TTL
+5. **Conflict detection**: Same key with different request data returns 409
+
+### Usage Example
+```bash
+curl -X POST http://localhost:6029/api/payments/intents \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: payment-intent-12345" \
+  -H "x-tenant-id: TENANT" \
+  -H "Authorization: Bearer JWT_TOKEN" \
+  -d '{"amount":1000,"currency":"EUR","provider":"stripe"}'
+
+# Repeat with same key -> returns cached response
+# Change request data -> returns 409 Conflict
+```
+
+### Idempotency Key Requirements
+- **Required** for POST `/api/payments/intents` and POST `/api/refunds`
+- **Format**: Any string, recommend UUIDs or structured keys
+- **TTL**: 24 hours automatic cleanup
+- **Scope**: Per-tenant isolation
+
+## Webhook Processing
+
+### Stripe Webhooks
+- **Real signature verification** using Stripe SDK
+- **Supported events**:
+  - `payment_intent.succeeded` → Payment status: 'succeeded'
+  - `payment_intent.payment_failed` → Payment status: 'failed'
+  - `payment_intent.canceled` → Payment status: 'canceled'
+  - `payment_intent.requires_action` → Payment status: 'requires_action'
+  - `payment_intent.processing` → Payment status: 'processing'
+
+### PayPal Webhooks
+- **Header validation**: transmission-id, transmission-sig format validation
+- **Supported events**:
+  - `PAYMENT.CAPTURE.COMPLETED` → Payment status: 'succeeded'
+  - `PAYMENT.CAPTURE.DENIED` → Payment status: 'failed'
+  - `CHECKOUT.ORDER.APPROVED` → Payment status: 'requires_action'
+  - `CHECKOUT.ORDER.CANCELLED` → Payment status: 'canceled'
+
+### Event Deduplication
+- **Database-backed**: Uses `payment_events` table with unique `event_id`
+- **Automatic**: Duplicate events return 200 OK without processing
+- **Cross-tenant**: Events processed globally, payments updated per-tenant
+
+## API Changes (Stage 3)
+
+### POST /api/payments/intents
+- **Creates Payment record** in database with `status: 'created'`
+- **Returns real Payment.id** instead of mock ID
+- **Idempotency**: Requires `Idempotency-Key` header
+- **Status flow**: created → requires_action/pending → succeeded/failed
+
+### GET /api/payments/:id
+- **Reads from database** using `tenantPrisma(tenantId)`
+- **Returns 404** if payment not found in tenant
+- **Includes**: All payment fields + timestamps
+
+### POST /api/refunds
+- **Validates payment exists** and status is 'succeeded'
+- **Creates Refund record** with status 'pending'
+- **Idempotency**: Requires `Idempotency-Key` header
+- **Amount validation**: Cannot exceed original payment amount
+
 ## Current Status
 
-✅ **Stage 2 Complete**:
-- Real shared-middleware integration (`@beauty-platform/shared-middleware`)
-- Provider structure with unified interfaces (Stripe + PayPal)
-- Webhook endpoints with raw body processing and signature validation
-- In-memory event deduplication for idempotency
-- API endpoint provider delegation
-- Comprehensive documentation
+✅ **Stage 3 Complete**:
+- Database models: Payment, PaymentEvent, Refund, IdempotencyKey
+- Database-backed idempotency with 24h TTL and conflict detection
+- Real Stripe SDK integration with signature verification
+- PayPal header validation with format checking
+- Webhook event deduplication using database unique constraints
+- Payment status mapping for both providers
+- Full CRUD operations with tenant isolation via `tenantPrisma()`
+- Comprehensive error handling and validation
 
-🚧 **Next (Stage 3)**:
-- Prisma models: `payments`, `payment_events`, `refunds`
-- Database-backed idempotency
-- Real Stripe/PayPal SDK integration
-- Production webhook signature verification
+🚧 **Next (Stage 4)**:
+- Real provider API calls (create actual Stripe/PayPal payment intents)
+- Provider refund API integration
+- PDF invoice generation with Puppeteer
+- Advanced webhook event processing (partial captures, refund events)

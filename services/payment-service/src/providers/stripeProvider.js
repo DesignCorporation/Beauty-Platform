@@ -1,5 +1,9 @@
-// Stripe Payment Provider
-// TODO: Add real Stripe SDK integration
+// Stripe Payment Provider with SDK Integration
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2024-06-20'
+});
 
 /**
  * Create a Stripe payment intent
@@ -13,35 +17,65 @@
 export async function createIntent({ amount, currency = 'EUR', metadata }) {
   if (!amount) throw new Error('amount required');
 
-  const id = `pay_${Math.random().toString(36).slice(2, 10)}`;
+  // Mock ID for now (will be replaced with real Payment.id)
+  const mockId = `pay_${Math.random().toString(36).slice(2, 10)}`;
 
   return {
-    id,
+    id: mockId,
     provider: 'stripe',
-    status: 'requires_action',
-    clientSecret: `cs_${id}`,
-    currency,
+    status: 'created', // Will change to requires_action after webhook
+    clientSecret: `cs_${mockId}`,
+    currency: currency.toLowerCase(),
     metadata: metadata ?? null
   };
 }
 
 /**
- * Parse Stripe webhook event
+ * Parse Stripe webhook event with SDK verification
  * @param {Buffer} rawBody - Raw webhook body
  * @param {Object} headers - Request headers
  * @returns {Object|null} Parsed event or null if invalid
  */
-export function parseWebhookEvent(body, headers) {
-  const sig = headers['stripe-signature'];
-  if (!sig) throw new Error('Stripe-Signature required');
+export function parseWebhookEvent(rawBody, headers) {
+  const signature = headers['stripe-signature'];
+  if (!signature) throw new Error('Stripe-Signature required');
 
-  // mock parse
-  return {
-    eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
-    type: 'payment_intent.succeeded',
-    paymentId: 'pay_mock',
-    status: 'succeeded'
+  try {
+    // Real signature verification using Stripe SDK
+    const event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    return {
+      eventId: event.id,
+      type: event.type,
+      paymentId: event.data?.object?.id || null,
+      rawEvent: event
+    };
+
+  } catch (error) {
+    console.error('[Stripe] Webhook signature verification failed:', error.message);
+    throw new Error('Invalid webhook signature');
+  }
+}
+
+/**
+ * Map Stripe event type to payment status
+ * @param {string} eventType - Stripe event type
+ * @returns {string} - Payment status
+ */
+export function mapEventToStatus(eventType) {
+  const statusMap = {
+    'payment_intent.succeeded': 'succeeded',
+    'payment_intent.payment_failed': 'failed',
+    'payment_intent.canceled': 'canceled',
+    'payment_intent.requires_action': 'requires_action',
+    'payment_intent.processing': 'processing'
   };
+
+  return statusMap[eventType] || 'unknown';
 }
 
 /**

@@ -162,10 +162,75 @@ function createTenantPrisma(tenantId: string | null) {
       })
     },
     
+    // Payment models с фильтрацией по tenant
+    payment: {
+      findMany: (args?: any) => prisma.payment.findMany({
+        ...args,
+        where: tenantId ? { ...args?.where, tenantId } : args?.where
+      }),
+      findFirst: (args?: any) => prisma.payment.findFirst({
+        ...args,
+        where: tenantId ? { ...args?.where, tenantId } : args?.where
+      }),
+      findUnique: (args: any) => prisma.payment.findUnique({
+        ...args,
+        where: tenantId ? { ...args.where, tenantId } : args.where
+      }),
+      create: (args: any) => prisma.payment.create({
+        ...args,
+        data: tenantId ? { ...args.data, tenantId } : args.data
+      }),
+      update: (args: any) => prisma.payment.update({
+        ...args,
+        where: tenantId ? { ...args.where, tenantId } : args.where
+      }),
+      delete: (args: any) => prisma.payment.delete({
+        ...args,
+        where: tenantId ? { ...args.where, tenantId } : args.where
+      }),
+      count: (args?: any) => prisma.payment.count({
+        ...args,
+        where: tenantId ? { ...args?.where, tenantId } : args?.where
+      })
+    },
+
+    // PaymentEvent - глобальная модель
+    paymentEvent: {
+      findMany: (args?: any) => prisma.paymentEvent.findMany(args),
+      findFirst: (args?: any) => prisma.paymentEvent.findFirst(args),
+      create: (args: any) => prisma.paymentEvent.create(args),
+      count: (args?: any) => prisma.paymentEvent.count(args)
+    },
+
+    // Refund - глобальная модель
+    refund: {
+      findMany: (args?: any) => prisma.refund.findMany(args),
+      findFirst: (args?: any) => prisma.refund.findFirst(args),
+      create: (args: any) => prisma.refund.create(args),
+      update: (args: any) => prisma.refund.update(args),
+      count: (args?: any) => prisma.refund.count(args)
+    },
+
+    // IdempotencyKey с фильтрацией по tenant
+    idempotencyKey: {
+      findFirst: (args?: any) => prisma.idempotencyKey.findFirst({
+        ...args,
+        where: tenantId ? { ...args?.where, tenantId } : args?.where
+      }),
+      create: (args: any) => prisma.idempotencyKey.create({
+        ...args,
+        data: tenantId ? { ...args.data, tenantId } : args.data
+      }),
+      delete: (args: any) => prisma.idempotencyKey.delete({
+        ...args,
+        where: tenantId ? { ...args.where, tenantId } : args.where
+      })
+    },
+
     // Raw queries с проверкой tenant
     $queryRaw: prisma.$queryRaw,
     $executeRaw: prisma.$executeRaw,
-    
+
     // Transactions
     $transaction: prisma.$transaction.bind(prisma)
   }
