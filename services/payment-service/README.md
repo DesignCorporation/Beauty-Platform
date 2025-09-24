@@ -449,18 +449,115 @@ curl -X POST http://localhost:6029/api/payments/intents \
 
 ## Current Status
 
-✅ **Stage 3 Complete**:
-- Database models: Payment, PaymentEvent, Refund, IdempotencyKey
-- Database-backed idempotency with 24h TTL and conflict detection
-- Real Stripe SDK integration with signature verification
-- PayPal header validation with format checking
-- Webhook event deduplication using database unique constraints
-- Payment status mapping for both providers
-- Full CRUD operations with tenant isolation via `tenantPrisma()`
-- Comprehensive error handling and validation
+✅ **Stage 4 Complete**:
+- **PDF Invoice Generation**: Professional PDF invoices using Puppeteer with RU/EN localization
+- **Real Stripe SDK Integration**: Live API calls with fallback to mocks when keys unavailable
+- **Real PayPal SDK Integration**: Live order creation with approval URLs and error handling
+- **Environment-aware Configuration**: Graceful degradation when API keys are placeholders
+- **Professional Invoice Templates**: HTML templates with currency formatting and business details
+- **Multi-language Support**: Russian and English invoice localization
+- **Error Handling**: Comprehensive error handling with fallback mechanisms
+- **All Stage 3 Features**: Database operations, idempotency, webhooks, tenant isolation
 
-🚧 **Next (Stage 4)**:
-- Real provider API calls (create actual Stripe/PayPal payment intents)
+🚧 **Next (Stage 5)**:
 - Provider refund API integration
-- PDF invoice generation with Puppeteer
 - Advanced webhook event processing (partial captures, refund events)
+- Email delivery of PDF invoices
+- Recurring payments support
+
+## Stage 4 Features
+
+### PDF Invoice Generation
+
+Generate professional PDF invoices with full localization support:
+
+```bash
+POST /api/invoices/:paymentId/generate
+Headers: x-tenant-id: salon1, Authorization: Bearer <token>
+{
+  "locale": "ru",
+  "salonInfo": {
+    "name": "Beauty Salon Premium",
+    "address": "ул. Красная, 15, Москва, 101000",
+    "taxNumber": "ИНН 7707123456",
+    "email": "info@beautysalon.ru"
+  }
+}
+
+Response:
+{
+  "paymentId": "cm123456",
+  "url": "/tmp/invoices/cm123456.pdf",
+  "size": 25678,
+  "status": "generated",
+  "generatedAt": "2025-09-24T23:00:00.000Z"
+}
+```
+
+**Supported Features**:
+- ✅ RU/EN localization with currency formatting
+- ✅ Professional layout with salon branding
+- ✅ Payment status badges and transaction details
+- ✅ Automatic currency conversion (cents/units)
+- ✅ PDF storage in `/tmp/invoices/` directory
+
+### Real SDK Integration
+
+#### Stripe Live API
+
+When valid `STRIPE_SECRET_KEY` is provided:
+```javascript
+// Creates real Stripe payment intent
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: 2000, // €20.00 in cents
+  currency: 'eur',
+  automatic_payment_methods: { enabled: true }
+});
+```
+
+**Environment Detection**:
+- ✅ Detects `sk_test_*` or `sk_live_*` keys
+- ✅ Falls back to mocks if placeholder values
+- ✅ Real webhook signature verification
+- ❌ Mock implementation when keys unavailable
+
+#### PayPal Live API
+
+When valid `PAYPAL_CLIENT_ID` and `PAYPAL_SECRET` are provided:
+```javascript
+// Creates real PayPal order
+const order = await paypalClient.execute(new orders.OrdersCreateRequest());
+// Returns real approval URL for customer redirect
+```
+
+**Environment Detection**:
+- ✅ Auto-detects sandbox vs production environment
+- ✅ Creates real orders with approval URLs
+- ✅ Handles PayPal API responses and errors
+- ❌ Mock implementation when credentials unavailable
+
+### Environment Configuration
+
+#### Development with Mock APIs
+```bash
+STRIPE_SECRET_KEY="sk_test_placeholder"
+PAYPAL_CLIENT_ID="placeholder_client_id"
+# Result: Mock implementations with console warnings
+```
+
+#### Development with Real APIs
+```bash
+STRIPE_SECRET_KEY="sk_test_51ABC123..."
+PAYPAL_CLIENT_ID="AXB123..."
+PAYPAL_SECRET="ABC456..."
+# Result: Real API calls to sandbox environments
+```
+
+#### Production with Real APIs
+```bash
+NODE_ENV=production
+STRIPE_SECRET_KEY="sk_live_51XYZ789..."
+PAYPAL_CLIENT_ID="AXB789..."
+PAYPAL_SECRET="XYZ123..."
+# Result: Real API calls to production environments
+```

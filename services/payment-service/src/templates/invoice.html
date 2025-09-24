@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="{{locale}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: #fff;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e1e5e9;
+            padding-bottom: 20px;
+        }
+
+        .company-info {
+            flex: 1;
+        }
+
+        .company-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .company-details {
+            font-size: 14px;
+            color: #718096;
+            line-height: 1.6;
+        }
+
+        .invoice-info {
+            text-align: right;
+            flex: 1;
+        }
+
+        .invoice-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .invoice-number {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+
+        .invoice-date {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin: 40px 0;
+        }
+
+        .billing-details, .payment-details {
+            flex: 1;
+            margin-right: 40px;
+        }
+
+        .payment-details {
+            margin-right: 0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .payment-summary {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 40px 0;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .summary-row.total {
+            border-top: 2px solid #4a5568;
+            padding-top: 10px;
+            margin-top: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-succeeded {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-pending {
+            background: #fef5e7;
+            color: #975a16;
+        }
+
+        .status-failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #a0aec0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+
+        .provider-logo {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 10px;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="company-info">
+                <div class="company-name">{{salonName}}</div>
+                <div class="company-details">
+                    {{salonAddress}}<br>
+                    {{salonTaxNumber}}<br>
+                    {{salonEmail}}
+                </div>
+            </div>
+            <div class="invoice-info">
+                <div class="invoice-title">{{invoiceTitle}}</div>
+                <div class="invoice-number">{{invoiceNumberLabel}}: #{{paymentId}}</div>
+                <div class="invoice-date">{{dateLabel}}: {{paymentDate}}</div>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <div class="billing-details">
+                <div class="section-title">{{clientInfoLabel}}</div>
+                <div class="detail-row">
+                    <span class="detail-label">{{customerIdLabel}}:</span>
+                    <span class="detail-value">{{customerId}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">{{emailLabel}}:</span>
+                    <span class="detail-value">{{customerEmail}}</span>
+                </div>
+            </div>
+
+            <div class="payment-details">
+                <div class="section-title">{{paymentInfoLabel}}</div>
+                <div class="detail-row">
+                    <span class="detail-label">{{providerLabel}}:</span>
+                    <span class="detail-value">{{provider}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">{{statusLabel}}:</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-{{statusClass}}">{{statusText}}</span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">{{providerIdLabel}}:</span>
+                    <span class="detail-value">{{providerId}}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-summary">
+            <div class="summary-row">
+                <span>{{serviceLabel}}:</span>
+                <span>{{formattedAmount}}</span>
+            </div>
+            <div class="summary-row total">
+                <span>{{totalLabel}}:</span>
+                <span>{{formattedAmount}}</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>{{footerText}}</div>
+            <div class="provider-logo">{{poweredBy}} {{provider}} • {{generatedAt}}</div>
+        </div>
+    </div>
+</body>
+</html>

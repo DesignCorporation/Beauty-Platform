@@ -1,8 +1,29 @@
-// PayPal Payment Provider with header validation
+// PayPal Payment Provider with SDK Integration
 import crypto from 'crypto';
+import { core, orders } from '@paypal/checkout-server-sdk';
+
+// Проверяем наличие реальных PayPal credentials
+const isRealPaypalCredentials = process.env.PAYPAL_CLIENT_ID &&
+  process.env.PAYPAL_SECRET &&
+  !process.env.PAYPAL_CLIENT_ID.includes('placeholder') &&
+  !process.env.PAYPAL_SECRET.includes('placeholder');
+
+let paypalClient = null;
+
+if (isRealPaypalCredentials) {
+  // Определяем среду: sandbox или production
+  const environment = process.env.NODE_ENV === 'production'
+    ? new core.LiveEnvironment(process.env.PAYPAL_CLIENT_ID, process.env.PAYPAL_SECRET)
+    : new core.SandboxEnvironment(process.env.PAYPAL_CLIENT_ID, process.env.PAYPAL_SECRET);
+
+  paypalClient = new core.PayPalHttpClient(environment);
+  console.log('[PayPal] Real API integration enabled');
+} else {
+  console.warn('[PayPal] Using mock implementation - set PAYPAL_CLIENT_ID and PAYPAL_SECRET for live API');
+}
 
 /**
- * Create a PayPal payment intent
+ * Create a PayPal payment intent (order)
  * @param {Object} params - Payment parameters
  * @param {number} params.amount - Amount in currency units (not cents)
  * @param {string} params.currency - Currency code (EUR, PLN, USD)
@@ -10,18 +31,80 @@ import crypto from 'crypto';
  * @param {Object} [params.metadata] - Payment metadata
  * @returns {Object} Unified payment response
  */
-export async function createIntent({ amount, currency = 'EUR', metadata }) {
+export async function createIntent({ amount, currency = 'EUR', customerId, metadata }) {
   if (!amount) throw new Error('amount required');
 
-  // Mock ID for now (will be replaced with real Payment.id)
-  const mockId = `pay_${Math.random().toString(36).slice(2, 10)}`;
+  // Real PayPal API call if we have valid credentials
+  if (paypalClient && isRealPaypalCredentials) {
+    try {
+      console.log(`[PayPal] Creating real order: ${amount} ${currency.toUpperCase()}`);
+
+      const request = new orders.OrdersCreateRequest();
+      request.headers['Prefer'] = 'return=representation';
+      request.requestBody({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: currency.toUpperCase(),
+            value: amount.toString()
+          },
+          description: metadata?.description || 'Beauty Platform Payment',
+          custom_id: customerId || undefined,
+          invoice_id: metadata?.invoiceId || undefined
+        }],
+        application_context: {
+          brand_name: 'Beauty Platform',
+          landing_page: 'NO_PREFERENCE',
+          user_action: 'PAY_NOW',
+          return_url: metadata?.returnUrl || 'https://salon.beauty.designcorp.eu/payment/success',
+          cancel_url: metadata?.cancelUrl || 'https://salon.beauty.designcorp.eu/payment/cancel'
+        }
+      });
+
+      const response = await paypalClient.execute(request);
+      const order = response.result;
+
+      // Найти approval URL
+      const approvalUrl = order.links.find(link => link.rel === 'approve')?.href || null;
+
+      console.log(`[PayPal] Order created: ${order.id} (${order.status})`);
+
+      return {
+        id: order.id,
+        provider: 'paypal',
+        status: order.status.toLowerCase(), // CREATED -> created
+        approvalUrl: approvalUrl,
+        currency: currency.toLowerCase(),
+        metadata: metadata ?? null
+      };
+
+    } catch (error) {
+      console.error('[PayPal] API Error:', error.message);
+
+      // If API call fails, fall back to mock with error status
+      const mockId = `pay_paypal_error_${Math.random().toString(36).slice(2, 8)}`;
+      return {
+        id: mockId,
+        provider: 'paypal',
+        status: 'failed',
+        approvalUrl: null,
+        currency: currency.toLowerCase(),
+        metadata: metadata ?? null,
+        error: `PayPal API Error: ${error.message}`
+      };
+    }
+  }
+
+  // Mock implementation fallback
+  console.log(`[PayPal] Using mock implementation: ${amount} ${currency.toUpperCase()}`);
+  const mockId = `pay_paypal_mock_${Math.random().toString(36).slice(2, 10)}`;
 
   return {
     id: mockId,
     provider: 'paypal',
-    status: 'created', // Will change to pending after webhook
-    approvalUrl: `https://paypal.test/approve/${mockId}`,
-    currency: currency.toUpperCase(),
+    status: 'created', // Mock всегда начинает с created
+    approvalUrl: `https://www.sandbox.paypal.com/checkoutnow?token=${mockId}`,
+    currency: currency.toLowerCase(),
     metadata: metadata ?? null
   };
 }

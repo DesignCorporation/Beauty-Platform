@@ -6,6 +6,7 @@ const { tenantPrisma, prisma: globalPrisma } = pkg;
 import { createIntent as createStripeIntent, parseWebhookEvent as parseStripeWebhook, mapEventToStatus as mapStripeStatus } from './providers/stripeProvider.js';
 import { createIntent as createPaypalIntent, parseWebhookEvent as parsePaypalWebhook, mapEventToStatus as mapPaypalStatus } from './providers/paypalProvider.js';
 import { idempotencyMiddleware } from './middleware/idempotency.js';
+import { generateInvoicePDF } from './utils/pdf-generator.js';
 
 // Load environment variables
 dotenv.config();
@@ -415,22 +416,46 @@ app.post('/api/refunds', async (req, res) => {
 app.post('/api/invoices/:paymentId/generate', async (req, res) => {
   try {
     const { paymentId } = req.params;
+    const tenantId = req.tenantId;
+    const { locale = 'ru', salonInfo } = req.body || {};
 
-    // TODO: Implement PDF generation with Puppeteer
-    // - Fetch payment details from database
-    // - Render invoice template (branded, i18n)
-    // - Generate PDF using Puppeteer
-    // - Save to local storage or S3
-    // - Return URL/stream
+    // Получаем payment из базы данных через tenant-isolated клиент
+    const db = tenantPrisma(tenantId);
+    const payment = await db.payment.findFirst({
+      where: { id: paymentId }
+    });
 
-    const invoiceUrl = `/tmp/invoices/${paymentId}_${Date.now()}.pdf`;
+    if (!payment) {
+      return res.status(404).json({
+        error: 'Payment not found',
+        code: 'PAYMENT_NOT_FOUND'
+      });
+    }
+
+    // Подготавливаем информацию о салоне (с fallback значениями)
+    const salonData = {
+      name: salonInfo?.name || 'Beauty Salon',
+      address: salonInfo?.address || 'Address not specified',
+      taxNumber: salonInfo?.taxNumber || 'Tax number not specified',
+      email: salonInfo?.email || 'contact@salon.com'
+    };
+
+    // Генерируем PDF инвойс
+    const { filePath, size } = await generateInvoicePDF(payment, {
+      locale,
+      salonInfo: salonData
+    });
+
+    console.log(`[API] Generated invoice PDF for payment ${paymentId}, size: ${Math.round(size / 1024)}KB`);
 
     res.json({
       paymentId,
-      url: invoiceUrl,
+      url: filePath,
+      size,
       status: 'generated',
       generatedAt: new Date().toISOString()
     });
+
   } catch (error) {
     console.error('[API] Error generating invoice:', error.message);
     res.status(500).json({ error: 'Internal server error' });
