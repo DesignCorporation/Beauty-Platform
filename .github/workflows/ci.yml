@@ -221,7 +221,7 @@ jobs:
 
     steps:
     - name: Notify Telegram
-      if: ${{ secrets.TELEGRAM_BOT_TOKEN && secrets.TELEGRAM_CHAT_ID }}
+      if: ${{ vars.TELEGRAM_ENABLED == 'true' || (secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != '') }}
       run: |
         if [ "${{ needs.lint-and-test.result }}" == "success" ] && [ "${{ needs.docker-build.result }}" == "success" ]; then
           MESSAGE="✅ Beauty Platform CI/CD успешно завершен\n\n📋 Commit: ${{ github.sha }}\n👤 Author: ${{ github.actor }}\n🌿 Branch: ${{ github.ref_name }}"

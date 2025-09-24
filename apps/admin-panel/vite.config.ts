@@ -33,6 +33,12 @@ export default defineConfig({
         secure: false,
         logLevel: 'debug'
       },
+      '/dev-orchestrator': {
+        target: 'http://localhost:6050/api/dev',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/dev-orchestrator/, '')
+      },
       '/uploads': {
         target: 'http://localhost:6026',
         changeOrigin: true,
