@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { tenantPrisma } from '../prisma';
+import { createStripeRefund, createPayPalRefund } from '../providers/refundProviders';
 import crypto from 'crypto';
 
 const router = Router();
@@ -140,48 +141,181 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    // Create refund record
-    const refund = await prisma.refund.create({
-      data: {
-        tenantId,
-        paymentId,
-        provider: payment.metadata?.provider || 'stripe', // Default to stripe
-        amount: refundAmount,
-        currency: payment.currency,
-        status: 'pending',
-        reason: reason || 'Customer request',
-        metadata: {
-          createdViaAPI: true,
-          originalPaymentAmount: Number(payment.amount * 100)
+    // Determine provider and provider payment ID
+    const provider = payment.metadata?.provider || 'stripe';
+    const providerId = payment.stripePaymentIntentId || payment.metadata?.providerId;
+
+    if (!providerId) {
+      return res.status(400).json({
+        error: 'Provider payment ID not found',
+        code: 'MISSING_PROVIDER_ID',
+        message: `Payment ${paymentId} missing provider ID for ${provider} refund`
+      });
+    }
+
+    let providerRefundResult;
+
+    try {
+      // Create refund through provider
+      if (provider === 'stripe') {
+        providerRefundResult = await createStripeRefund({
+          paymentIntentId: providerId,
+          amount: refundAmount,
+          reason: reason || 'requested_by_customer'
+        });
+      } else if (provider === 'paypal') {
+        // For PayPal, try to use capture ID from metadata, fallback to order ID
+        const captureId = payment.metadata?.captureId;
+        const orderId = payment.metadata?.orderId || providerId;
+
+        providerRefundResult = await createPayPalRefund({
+          captureId,
+          orderId,
+          amount: refundAmount,
+          currency: payment.currency,
+          note: reason || 'Customer request'
+        });
+      } else {
+        return res.status(400).json({
+          error: 'Unsupported payment provider',
+          code: 'UNSUPPORTED_PROVIDER',
+          message: `Provider ${provider} not supported for refunds`
+        });
+      }
+
+      // Handle provider errors (status: failed)
+      if (providerRefundResult.status === 'failed') {
+        // Create failed refund record
+        const refund = await prisma.refund.create({
+          data: {
+            tenantId,
+            paymentId,
+            provider,
+            providerRefundId: providerRefundResult.providerRefundId,
+            amount: refundAmount,
+            currency: payment.currency,
+            status: 'failed',
+            reason: reason || 'Customer request',
+            metadata: {
+              createdViaAPI: true,
+              originalPaymentAmount: Number(payment.amount * 100),
+              providerError: providerRefundResult.errorMessage,
+              providerMetadata: providerRefundResult.metadata
+            }
+          }
+        });
+
+        // Log failure event
+        await prisma.paymentEvent.create({
+          data: {
+            tenantId,
+            provider,
+            eventType: 'refund.failed',
+            eventId: `refund_${provider}_${refund.id}_${Date.now()}`,
+            paymentId,
+            refundId: refund.id,
+            payload: {
+              refundId: refund.id,
+              error: providerRefundResult.errorMessage,
+              providerResult: providerRefundResult
+            },
+            processed: true
+          }
+        });
+
+        return res.status(502).json({
+          error: 'Provider refund failed',
+          code: 'PROVIDER_REFUND_FAILED',
+          message: providerRefundResult.errorMessage,
+          refund: {
+            id: refund.id,
+            paymentId: refund.paymentId,
+            amount: refund.amount,
+            currency: refund.currency,
+            status: refund.status,
+            reason: refund.reason,
+            createdAt: refund.createdAt.toISOString()
+          }
+        });
+      }
+
+      // Create successful/pending refund record
+      const refund = await prisma.refund.create({
+        data: {
+          tenantId,
+          paymentId,
+          provider,
+          providerRefundId: providerRefundResult.providerRefundId,
+          amount: refundAmount,
+          currency: payment.currency,
+          status: providerRefundResult.status,
+          reason: reason || 'Customer request',
+          metadata: {
+            createdViaAPI: true,
+            originalPaymentAmount: Number(payment.amount * 100),
+            providerMetadata: providerRefundResult.metadata
+          }
         }
-      }
-    });
+      });
 
-    // Prepare response
-    const response = {
-      id: refund.id,
-      paymentId: refund.paymentId,
-      amount: refund.amount,
-      currency: refund.currency,
-      status: refund.status,
-      reason: refund.reason,
-      createdAt: refund.createdAt.toISOString()
-    };
+      // Log refund creation event
+      await prisma.paymentEvent.create({
+        data: {
+          tenantId,
+          provider,
+          eventType: providerRefundResult.status === 'succeeded' ? 'refund.succeeded' : 'refund.created',
+          eventId: `refund_${provider}_${refund.id}_${Date.now()}`,
+          paymentId,
+          refundId: refund.id,
+          payload: {
+            refundId: refund.id,
+            providerRefundId: providerRefundResult.providerRefundId,
+            amount: refundAmount,
+            status: providerRefundResult.status,
+            providerResult: providerRefundResult
+          },
+          processed: true
+        }
+      });
 
-    // Cache the response for idempotency (24h TTL)
-    await prisma.idempotencyKey.create({
-      data: {
-        key: idempotencyKey,
-        tenantId,
-        requestHash,
-        response: response,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-      }
-    });
+      // Prepare response
+      const response = {
+        id: refund.id,
+        paymentId: refund.paymentId,
+        provider: refund.provider,
+        providerRefundId: refund.providerRefundId,
+        amount: refund.amount,
+        currency: refund.currency,
+        status: refund.status,
+        reason: refund.reason,
+        createdAt: refund.createdAt.toISOString()
+      };
 
-    console.log(`[REFUNDS] Created refund ${refund.id} for payment ${paymentId}: ${refundAmount/100} ${payment.currency}`);
+      // Cache the response for idempotency (24h TTL)
+      await prisma.idempotencyKey.create({
+        data: {
+          key: idempotencyKey,
+          tenantId,
+          requestHash,
+          response: response,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        }
+      });
 
-    res.status(201).json(response);
+      console.log(`[REFUNDS] Created refund ${refund.id} for payment ${paymentId}: ${refundAmount/100} ${payment.currency} (${providerRefundResult.status})`);
+
+      res.status(201).json(response);
+
+    } catch (providerError: any) {
+      console.error('[REFUNDS] Provider error during refund creation:', providerError);
+
+      // Return 502 for provider communication errors
+      res.status(502).json({
+        error: 'Provider communication error',
+        code: 'PROVIDER_ERROR',
+        message: 'Failed to communicate with payment provider'
+      });
+    }
 
   } catch (error) {
     console.error('[REFUNDS] Error creating refund:', error);
