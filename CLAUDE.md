@@ -11,8 +11,8 @@
 - **Salon CRM** (6001), **Client Portal** (6003), **MCP Server** (6025)
 - **Images API** (6026), **Notification Service** (6028), **Database** PostgreSQL beauty_platform_new
 
-### ⏳ В разработке:
-- **Payment Service** (6029) - следующая приоритетная задача
+### ⏳ В активной разработке:
+- **Payment Service** (6029) - Stage 5: Refunds API + Email delivery (60% завершено)
 
 ## 📚 КАК ЭФФЕКТИВНО ЧИТАТЬ MCP ПАМЯТЬ
 
@@ -116,11 +116,18 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ Graceful error handling с mock данными
    - ✅ Все TypeScript типы экспортированы в UI пакет
 
-2. **Payment Service (6029)** ⏳ ПРИОРИТЕТ #1
-   - Stripe/PayPal интеграция с webhook поддержкой
-   - Multi-currency support (EUR/PLN/USD)
-   - PDF invoice generation через puppeteer
-   - Raw body middleware для Stripe webhook signatures
+2. **Payment Service (6029)** 🔄 STAGE 5 В РАЗРАБОТКЕ (60% ЗАВЕРШЕН)
+   **Branch:** `feature/payment-stage5-refunds-email`
+   **GitHub Issue:** #17
+
+   ✅ **ЗАВЕРШЕННЫЕ ЭТАПЫ** (3 из 5):
+   - ✅ **Шаг 1**: Database Models + Idempotency (Refund, InvoiceEmail, PaymentEvent, IdempotencyKey)
+   - ✅ **Шаг 2**: Stripe/PayPal Refunds (Real SDK integration с fallback)
+   - ✅ **Шаг 3**: Webhook Processing (Deduplication + status updates)
+
+   ⏳ **СЛЕДУЮЩИЕ ЭТАПЫ**:
+   - 🔄 **Шаг 4**: Email Delivery Integration (Notification Service 6028)
+   - ⏳ **Шаг 5**: Documentation & Examples
 
 3. **Интеграция и доработки** ⏳
    - Добавить Notification Service в auto-restore систему
@@ -498,5 +505,21 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ **РЕЗУЛЬТАТ**: Auto-restore система полностью восстановлена, MCP Server успешно восстановлен через API
    - ✅ **ФАЙЛЫ ОБНОВЛЕНЫ**: `/services/api-gateway/src/routes/auto-restore.ts:7-9`
 
+19. **🔄 PAYMENT SERVICE - STAGE 5 PROGRESS (22.09.2025)**:
+   - ✅ **GitHub Issue #17 создан**: Полные технические спецификации Stage 5
+   - ✅ **Ветка создана**: `feature/payment-stage5-refunds-email`
+   - ✅ **Шаг 1-3 завершены** (60% прогресса):
+     - ✅ Database models: Refund, InvoiceEmail, PaymentEvent, IdempotencyKey с tenant isolation
+     - ✅ API endpoint: `POST /api/refunds` с mandatory Idempotency-Key header
+     - ✅ Real provider integration: Live Stripe/PayPal SDK calls с graceful fallback
+     - ✅ Webhook processing: Stripe/PayPal refund events с deduplication system
+     - ✅ Event-driven architecture: Comprehensive PaymentEvent logging
+   - 📊 **Commits выполнены**:
+     - `feat(payment): add refunds API skeleton with idempotency`
+     - `feat(payment): implement Stripe/PayPal refunds with events`
+     - `feat(payment): handle refund webhooks (dedupe + status updates)`
+   - ⏳ **Следующий milestone**: Email delivery integration (Шаг 4/5)
+   - 📝 **GitHub обновлен**: Детальный progress update опубликован в Issue #17
+
 ---
-*Последнее обновление памяти: 22.09.2025 - AUTO-RESTORE СИСТЕМА ВОССТАНОВЛЕНА: исправлены пути после миграции проекта, все эндпоинты протестированы и работают корректно*
+*Последнее обновление памяти: 25.09.2025 - PAYMENT SERVICE STAGE 5: 60% завершен (3/5 шагов), следующий milestone - email delivery integration*

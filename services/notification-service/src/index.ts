@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import healthRoutes from './routes/health';
 import notificationRoutes from './routes/notifications';
 import settingsRoutes from './routes/settings';
+import emailRoutes from './routes/email';
 
 // Загрузка переменных окружения
 dotenv.config();
@@ -64,6 +65,9 @@ app.use('/', healthRoutes);
 // API routes (with authentication)
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
+
+// Email API routes (no tenant auth for cross-service communication)
+app.use('/api/notify', emailRoutes);
 
 // Future API routes
 // app.use('/api/templates', tenantAuth, templateRoutes);
