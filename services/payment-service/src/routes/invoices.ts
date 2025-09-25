@@ -77,10 +77,9 @@ router.post('/:paymentId/email', async (req: Request, res: Response) => {
       .digest('hex');
 
     // Check for existing idempotency key
-    const existingIdempotency = await prisma.idempotencyKey.findFirst({
+    const existingIdempotency = await prisma.idempotencyKey.findUnique({
       where: {
-        key: idempotencyKey,
-        tenantId
+        key: idempotencyKey
       }
     });
 
