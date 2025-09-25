@@ -28,36 +28,39 @@ class TenantPrismaManager {
       });
 
       // Middleware для автоматической фильтрации по tenantId
-      client.$use(async (params, next) => {
-        // Добавляем tenantId во все запросы где это возможно
-        if (params.model && ['Subscription', 'Payment', 'Invoice'].includes(params.model)) {
-          if (params.action === 'findMany' || params.action === 'findFirst') {
-            params.args = params.args || {};
-            params.args.where = params.args.where || {};
-            params.args.where.tenantId = tenantId;
+      if (true) { // Re-enabled after fixing @map issues
+        // Middleware для автоматической фильтрации по tenantId
+        client.$use(async (params, next) => {
+          // Добавляем tenantId во все запросы где это возможно
+          if (params.model && ['Payment', 'Invoice', 'Refund', 'InvoiceEmail', 'PaymentEvent', 'IdempotencyKey'].includes(params.model)) {
+            if (params.action === 'findMany' || params.action === 'findFirst') {
+              params.args = params.args || {};
+              params.args.where = params.args.where || {};
+              params.args.where.tenantId = tenantId;
+            }
+
+            if (params.action === 'create') {
+              params.args = params.args || {};
+              params.args.data = params.args.data || {};
+              params.args.data.tenantId = tenantId;
+            }
+
+            if (params.action === 'update' || params.action === 'updateMany') {
+              params.args = params.args || {};
+              params.args.where = params.args.where || {};
+              params.args.where.tenantId = tenantId;
+            }
+
+            if (params.action === 'delete' || params.action === 'deleteMany') {
+              params.args = params.args || {};
+              params.args.where = params.args.where || {};
+              params.args.where.tenantId = tenantId;
+            }
           }
 
-          if (params.action === 'create') {
-            params.args = params.args || {};
-            params.args.data = params.args.data || {};
-            params.args.data.tenantId = tenantId;
-          }
-
-          if (params.action === 'update' || params.action === 'updateMany') {
-            params.args = params.args || {};
-            params.args.where = params.args.where || {};
-            params.args.where.tenantId = tenantId;
-          }
-
-          if (params.action === 'delete' || params.action === 'deleteMany') {
-            params.args = params.args || {};
-            params.args.where = params.args.where || {};
-            params.args.where.tenantId = tenantId;
-          }
-        }
-
-        return next(params);
-      });
+          return next(params);
+        });
+      }
 
       this.prismaClients.set(tenantId, client);
     }

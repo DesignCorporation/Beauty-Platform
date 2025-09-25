@@ -98,11 +98,10 @@ router.post('/:paymentId/email', async (req: Request, res: Response) => {
       return res.status(200).json(existingIdempotency.response);
     }
 
-    // Find the payment
+    // Find the payment (now with correct @map schema)
     const payment = await prisma.payment.findFirst({
       where: {
-        id: paymentId,
-        tenantId
+        id: paymentId
       }
     });
 
@@ -398,11 +397,10 @@ router.get('/:paymentId/generate', async (req: Request, res: Response) => {
 
     const prisma = tenantPrisma(tenantId);
 
-    // Find the payment
+    // Find the payment (now with correct @map schema)
     const payment = await prisma.payment.findFirst({
       where: {
-        id: paymentId,
-        tenantId
+        id: paymentId
       }
     });
 

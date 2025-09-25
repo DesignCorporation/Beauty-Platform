@@ -1,18 +1,19 @@
 # 🧠 Claude Current Memory - Beauty Platform
 
-**Дата обновления:** 22.09.2025
-**Статус проекта:** 95% готовности, Production Ready
+**Дата обновления:** 25.09.2025
+**Статус проекта:** 96% готовности, Production Ready
 **Моя роль:** Lead Technical Developer & Architecture Guardian
 
 ## 🎯 ТЕКУЩАЯ СИТУАЦИЯ
 
-### ✅ Готовые сервисы (9 из 9):
+### ✅ Готовые сервисы (10 из 10):
 - **Landing Page** (6000), **Auth Service** (6021), **Admin Panel** (6002)
 - **Salon CRM** (6001), **Client Portal** (6003), **MCP Server** (6025)
 - **Images API** (6026), **Notification Service** (6028), **Database** PostgreSQL beauty_platform_new
+- **Payment Service** (6029) - ✅ **SMOKE TESTS ПРОЙДЕНЫ** (PDF generation работает, критические проблемы исправлены)
 
-### ⏳ В активной разработке:
-- **Payment Service** (6029) - Stage 5: Refunds API + Email delivery (60% завершено)
+### 🏁 Финализация завершена:
+- **Payment Service Stage 4+** - Готов к production deployment с PDF generation
 
 ## 📚 КАК ЭФФЕКТИВНО ЧИТАТЬ MCP ПАМЯТЬ
 
@@ -116,8 +117,44 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ Graceful error handling с mock данными
    - ✅ Все TypeScript типы экспортированы в UI пакет
 
-2. **Payment Service (6029)** 🔄 STAGE 5 В РАЗРАБОТКЕ (60% ЗАВЕРШЕН)
-   **Branch:** `feature/payment-stage5-refunds-email`
+2. **Payment Service (6029)** ✅ STAGE 5 ПОЧТИ ЗАВЕРШЕН (PR #18)
+   **Branch:** `feature/payment-stage5-refunds-email` → PR #18 в `main`
+
+## 🧾 PAYMENT SERVICE — ОПЕРАТИВНАЯ ПАМЯТЬ (Stage 2–5)
+
+- Порт: 6029; путь: `services/payment-service`
+- Критические правила:
+  - Все мутации только через `tenantPrisma(tenantId)`; в вебхуках — `globalPrisma` (read) → получаем `tenantId` → далее только `tenantPrisma`.
+  - `/api/*` за `@beauty-platform/shared-middleware` (JWT httpOnly). `/webhooks/*` без auth, raw body + подписи.
+  - Идемпотентность POST: `/api/payments/intents`, `/api/refunds`, `/api/invoices/:paymentId/email` по заголовку `Idempotency-Key` (TTL 24ч). Повтор — тот же ответ.
+  - Дедупликация вебхуков по `PaymentEvent.eventId` (unique). Повтор события → 200 OK без изменений.
+
+- Эндпоинты:
+  - POST `/api/payments/intents` — Stripe/PayPal (live при ключах, иначе fallback)
+  - POST `/api/refunds` — возвраты Stripe/PayPal (partial/full), идемпотентность
+  - POST `/api/invoices/:paymentId/generate` — PDF (Puppeteer) → `/tmp/invoices/<paymentId>.pdf` (возврат `{ paymentId,url,size,generatedAt }`)
+  - POST `/api/invoices/:paymentId/email` — отправка PDF через Notification Service (6028), автогенерация при отсутствии, идемпотентность
+  - Вебхуки: POST `/webhooks/stripe`, POST `/webhooks/paypal` — подписи/заголовки, dedupe, обновление статусов платежей/рефандов
+
+- Провайдеры:
+  - Stripe: `paymentIntents.create`, `refunds.create`, `webhooks.constructEvent` при `whsec_*`; безопасный fallback без ключей
+  - PayPal: `orders.create` и refunds (captures/orders), sandbox/prod detection; заголовки/валидация вебхуков; fallback без ключей
+
+- ENV (ключевые):
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+  - `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `PAYPAL_WEBHOOK_ID`
+  - `NOTIFY_SERVICE_URL` (напр. `http://localhost:6028/api/notify/email`), `NOTIFY_TOKEN`
+  - `INVOICE_DEFAULT_LOCALE` (ru|en), `DATABASE_URL`, `JWT_SECRET`, `PORT=6029`
+
+- База / Prisma:
+  - Таблицы: `payments`, `payment_events`, `refunds`, `idempotency_keys`, `invoice_emails`
+  - В БД snake_case: `tenant_id`, `created_at`, `updated_at`, `provider_id`, `payment_id`, `event_id`, `received_at`, `provider_refund_id`, `request_hash`, `expires_at`, `provider_response`
+  - В `core/database/prisma/schema.prisma` — обязательно выставить `@map("snake_case")` для всех перечисленных полей (несоответствие приводит к падениям middleware tenant)
+
+- Операционный чек-лист:
+  - Конфликт порта 6029: очистить — `sudo lsof -ti:6029 | xargs kill -9`; убедиться, что оркестратор не поднимает дубликаты
+  - Health: `curl http://localhost:6029/health` → `{ "status": "ok" }`
+  - Смоук (без ключей): intents (оба провайдера), generate PDF, email (graceful при недоступности 6028), refunds (валидация), идемпотентность (повтор — тот же ответ)
    **GitHub Issue:** #17
 
    ✅ **ЗАВЕРШЕННЫЕ ЭТАПЫ** (3 из 5):

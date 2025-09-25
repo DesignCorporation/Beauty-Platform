@@ -88,3 +88,33 @@
 - Синхронизировать стиль с пользователем (русский язык, кратко и по делу).
 
 *(Не забыть: этот файл — для ускорения будущих сессий. Всегда дополнять полезной инфой по мере накопления опыта.)*
+
+## Payment Service — краткая памятка (Stage 2–5)
+- Порт: 6029, путь сервиса: `services/payment-service`
+- Критические правила:
+  - Все мутации только через `tenantPrisma(tenantId)`; в вебхуках: `globalPrisma` (read) → resolve tenantId → далее `tenantPrisma`.
+  - `/api/*` за `@beauty-platform/shared-middleware` (JWT httpOnly). `/webhooks/*` без auth, только raw body + подписи.
+  - Идемпотентность для POST: `/api/payments/intents`, `/api/refunds`, `/api/invoices/:paymentId/email` через заголовок `Idempotency-Key` (TTL 24h).
+  - Дедупликация вебхуков по `PaymentEvent.eventId` (unique) — повторы → 200 OK без изменений.
+- Эндпоинты:
+  - POST `/api/payments/intents` — Stripe/PayPal, live при наличии ключей (fallback иначе).
+  - POST `/api/refunds` — возвраты Stripe/PayPal (partial/full), идемпотентность.
+  - POST `/api/invoices/:paymentId/generate` — PDF (Puppeteer) в `/tmp/invoices/<paymentId>.pdf` → `{ paymentId,url,size,generatedAt }`.
+  - POST `/api/invoices/:paymentId/email` — отправка PDF через Notification Service (6028), автогенерация при отсутствии, идемпотентность.
+  - Вебхуки: POST `/webhooks/stripe`, POST `/webhooks/paypal` — подписи/заголовки, dedupe, обновление статусов платежей/рефандов.
+- Провайдеры:
+  - Stripe: `paymentIntents.create`, `refunds.create`; `webhooks.constructEvent` при `whsec_*`; fallback без ключей.
+  - PayPal: `orders.create` и refunds (captures/orders), sandbox/prod detection; заголовки вебхуков; fallback без ключей.
+- ENV (минимум):
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+  - `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `PAYPAL_WEBHOOK_ID`
+  - `NOTIFY_SERVICE_URL` (напр. `http://localhost:6028/api/notify/email`), `NOTIFY_TOKEN`
+  - `INVOICE_DEFAULT_LOCALE` (ru|en), `DATABASE_URL`, `JWT_SECRET`, `PORT=6029`
+- База/Prisma:
+  - Таблицы: `payments`, `payment_events`, `refunds`, `idempotency_keys`, `invoice_emails`.
+  - В БД snake_case: `tenant_id`, `created_at`, `updated_at`, `provider_id`, `payment_id`, `event_id`, `received_at`, `provider_refund_id`, `request_hash`, `expires_at`, `provider_response`.
+  - В `core/database/prisma/schema.prisma` использовать `@map("snake_case")` для всех соответствующих полей (иначе упадёт middleware tenant).
+- Операционный чек-лист:
+  - Конфликт порта: очистить 6029 — `sudo lsof -ti:6029 | xargs kill -9`; убедиться, что оркестратор не запускает дубликаты.
+  - Health: `curl http://localhost:6029/health` → `{"status":"ok"}`.
+  - Смоук без ключей: intents (оба провайдера), generate PDF, email (graceful при недоступности 6028), refunds (валидация), идемпотентность (повтор — тот же ответ).

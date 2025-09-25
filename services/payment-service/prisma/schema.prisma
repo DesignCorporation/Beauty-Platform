@@ -10,64 +10,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 💳 Подписки салонов
-model Subscription {
-  id                   String   @id @default(cuid())
-  tenantId             String   // 🔐 КРИТИЧНО: Tenant isolation
-  plan                 String   // TRIAL, BASIC, PRO, ENTERPRISE
-  status               String   @default("TRIAL") // TRIAL, ACTIVE, CANCELLED, PAST_DUE
-  stripeCustomerId     String?  @unique
-  stripeSubscriptionId String?  @unique
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean  @default(false)
-  trialEndsAt          DateTime?
-
-  // Metadata
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  // Relations
-  payments             Payment[]
-
-  @@index([tenantId])
-  @@index([stripeCustomerId])
-  @@index([stripeSubscriptionId])
-  @@map("subscriptions")
-}
+// NOTE: Subscription model removed for Stage 5 simplicity
+// Will be added back in future stages when needed
 
 // 💰 Платежи и транзакции
 model Payment {
   id                     String       @id @default(cuid())
-  tenantId               String       // 🔐 КРИТИЧНО: Tenant isolation
-  subscriptionId         String?
+  tenantId               String       @map("tenant_id") // 🔐 КРИТИЧНО: Tenant isolation
 
-  // Stripe данные
-  stripePaymentIntentId  String?      @unique
-  stripeInvoiceId        String?      @unique
+  // Provider data (generic)
+  provider               String       // stripe, paypal, etc.
+  providerId             String?      // ИСПРАВЛЕНО: БД использует camelCase
 
-  // Сумма и валюта
-  amount                 Decimal      @db.Decimal(10,2)
+  // Customer reference
+  customerId             String?      @map("customer_id") // БД использует snake_case
+
+  // Сумма и валюта (integer in cents/units)
+  amount                 Int          // Amount in cents/units
   currency               String       @default("EUR") // EUR, PLN, USD
 
   // Статус
   status                 String       // PENDING, SUCCEEDED, FAILED, CANCELLED
-  description            String?
 
   // Metadata
-  metadata               Json?        // Дополнительные данные от Stripe
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
+  metadata               Json?        // Дополнительные данные от Provider
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  subscription           Subscription? @relation(fields: [subscriptionId], references: [id])
   refunds                Refund[]      // Payment can have multiple refunds
   events                 PaymentEvent[] // Payment can have multiple events
+  invoiceEmails          InvoiceEmail[] // Payment can have multiple invoice emails
 
   @@index([tenantId])
-  @@index([subscriptionId])
-  @@index([stripePaymentIntentId])
-  @@index([stripeInvoiceId])
   @@index([status])
   @@map("payments")
 }
@@ -113,12 +88,12 @@ model Invoice {
 // 🔄 Возвраты средств (Stage 5)
 model Refund {
   id                String    @id @default(cuid())
-  tenantId          String    // 🔐 КРИТИЧНО: Tenant isolation
-  paymentId         String    // Reference to Payment
+  tenantId          String    @map("tenant_id") // 🔐 КРИТИЧНО: Tenant isolation
+  paymentId         String    @map("payment_id") // Reference to Payment
 
   // Provider refund data
   provider          String    // "stripe" | "paypal"
-  providerRefundId  String?   // Provider's refund ID
+  providerRefundId  String?   @map("provider_refund_id") // Provider's refund ID
 
   // Amount and currency
   amount            Int       // Amount in cents/units
@@ -130,8 +105,8 @@ model Refund {
 
   // Metadata
   metadata          Json?     // Additional provider data
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
   payment           Payment?  @relation(fields: [paymentId], references: [id])
@@ -146,22 +121,27 @@ model Refund {
 
 // 📧 Email delivery tracking (Stage 5)
 model InvoiceEmail {
-  id              String    @id @default(cuid())
-  tenantId        String    // 🔐 КРИТИЧНО: Tenant isolation
-  paymentId       String    // Reference to Payment
+  id               String    @id @default(cuid())
+  tenantId         String    @map("tenant_id") // 🔐 КРИТИЧНО: Tenant isolation
+  paymentId        String    @map("payment_id") // Reference to Payment
 
   // Email data
-  recipientEmail  String    // Recipient email address
-  locale          String    @default("ru") // ru | en
+  to               String    // Recipient email address
+  subject          String    // Email subject
+  locale           String    @default("ru") // ru | en
 
   // Status tracking
-  status          String    @default("queued") // queued, sent, failed
-  sentAt          DateTime?
-  errorMessage    String?   // Error details if failed
+  status           String    @default("queued") // queued, sent, failed
+  sentAt           DateTime? @map("sent_at")
+  providerResponse Json?     @map("provider_response") // Provider response data
+  metadata         Json?     // Additional metadata
 
-  // Metadata
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  // Timestamps
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  payment          Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([paymentId])
@@ -172,23 +152,23 @@ model InvoiceEmail {
 // 📝 Payment events for webhook deduplication (Stage 5)
 model PaymentEvent {
   id            String    @id @default(cuid())
-  tenantId      String?   // Optional: events can be global
+  tenantId      String?   @map("tenant_id") // Optional: events can be global
 
   // Provider event data
   provider      String    // "stripe" | "paypal"
-  eventType     String    // Provider event type
-  eventId       String    @unique // Provider event ID (for deduplication)
+  eventType     String    @map("event_type") // Provider event type
+  eventId       String    @unique @map("event_id") // Provider event ID (for deduplication)
 
   // Related entities
-  paymentId     String?   // Optional payment reference
-  refundId      String?   // Optional refund reference
+  paymentId     String?   @map("payment_id") // Optional payment reference
+  refundId      String?   @map("refund_id") // Optional refund reference
 
   // Event payload
   payload       Json      // Full webhook payload
   processed     Boolean   @default(false)
 
   // Metadata
-  receivedAt    DateTime  @default(now())
+  receivedAt    DateTime  @default(now()) @map("received_at")
 
   // Relations
   payment       Payment?  @relation(fields: [paymentId], references: [id])
@@ -203,16 +183,14 @@ model PaymentEvent {
 
 // 🔑 Idempotency keys for API requests (24h TTL)
 model IdempotencyKey {
-  id           String    @id @default(cuid())
-  key          String    // Client-provided idempotency key
-  tenantId     String    // Tenant isolation
-  requestHash  String    // SHA256 of request data
+  key          String    @id // Client-provided idempotency key (primary key in DB)
+  tenantId     String    @map("tenant_id") // Tenant isolation
+  requestHash  String    @map("request_hash") // SHA256 of request data
   response     Json      // Cached response
-  expiresAt    DateTime  // Auto-cleanup after 24h
-  createdAt    DateTime  @default(now())
+  expiresAt    DateTime  @map("expires_at") // Auto-cleanup after 24h
+  createdAt    DateTime  @default(now()) @map("created_at")
 
-  @@unique([key, tenantId]) // Same key can exist for different tenants
-  @@index([key, tenantId])  // Fast lookup
+  @@index([tenantId])       // Tenant filtering
   @@index([expiresAt])      // For cleanup queries
   @@map("idempotency_keys")
 }
