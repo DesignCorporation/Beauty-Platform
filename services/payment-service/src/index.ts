@@ -11,6 +11,7 @@ import subscriptionRoutes from './routes/subscriptions';
 import webhookRoutes from './routes/webhooks';
 import refundRoutes from './routes/refunds';
 import invoiceRoutes from './routes/invoices';
+import paymentRoutes from './routes/payments';
 
 // Load environment variables
 dotenv.config();
@@ -92,6 +93,7 @@ app.use((req, res, next) => {
 // 🎯 Routes
 app.use('/', healthRoutes);                    // Health check (public)
 app.use('/webhooks', webhookRoutes);           // Stripe webhooks (raw body)
+app.use('/api/payments', paymentRoutes);       // Payment intents (protected)
 app.use('/api/subscriptions', subscriptionRoutes); // Subscription management (protected)
 app.use('/api/refunds', refundRoutes);         // Refunds API (protected)
 app.use('/api/invoices', invoiceRoutes);       // Invoice email delivery (protected)
@@ -105,6 +107,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: {
       health: '/health',
+      payments: '/api/payments',
       subscriptions: '/api/subscriptions',
       refunds: '/api/refunds',
       invoices: '/api/invoices',

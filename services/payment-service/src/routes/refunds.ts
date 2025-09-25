@@ -142,7 +142,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Determine provider and provider payment ID
     const provider = payment.metadata?.provider || 'stripe';
-    const providerId = payment.stripePaymentIntentId || payment.metadata?.providerId;
+    const providerId = payment.providerId || payment.metadata?.providerId;
 
     if (!providerId) {
       return res.status(400).json({

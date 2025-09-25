@@ -1,6 +1,6 @@
-# Payment Service - Stage 5: Email Delivery
+# Payment Service - Stage 6: Multi-Currency Support
 
-Beauty Platform Payment Service с интеграцией email delivery через Notification Service (6028).
+Beauty Platform Payment Service с мультивалютной поддержкой и интеграцией email delivery через Notification Service (6028).
 
 ## 🚀 Quick Start
 
@@ -120,6 +120,135 @@ INVOICE_DEFAULT_LOCALE="ru"                       # Локаль по умолч
 }
 ```
 
+## 💰 Multi-Currency Support
+
+### Environment Variables
+
+```env
+# Currency Configuration
+SUPPORTED_CURRENCIES="EUR,USD,PLN,GBP"             # Supported currencies (CSV)
+DEFAULT_CURRENCY="EUR"                             # Global default currency
+TENANT_DEFAULT_CURRENCY="TENANT_A=EUR,TENANT_B=USD" # Per-tenant defaults (CSV)
+```
+
+### Currency Logic
+
+**Priority Order:** Request Currency → Tenant Default → Global Default → EUR
+
+1. **Explicit Currency:** Валюта указана в request body
+2. **Tenant Default:** Из `TENANT_DEFAULT_CURRENCY` карты
+3. **Global Default:** Из `DEFAULT_CURRENCY` переменной
+4. **Fallback:** EUR (hardcoded)
+
+### API Integration
+
+#### Create Payment Intent with Currency
+
+**Endpoint:** `POST /api/payments/intents`
+**Headers:**
+- `x-tenant-id` (required) - Tenant ID
+- `Idempotency-Key` (required) - Уникальный ключ
+
+**Request Body:**
+```json
+{
+  "amount": 2500,
+  "currency": "usd",              // Optional: will be normalized to "USD"
+  "provider": "stripe",
+  "customerId": "cust_123",
+  "description": "Payment with custom currency"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "pay_1758820572484_c5429512940d5833",
+  "provider": "stripe",
+  "providerId": "pi_mock_d3dbf18c530508e83bb97ba1",
+  "amount": 2500,
+  "currency": "USD",              // Always uppercase in response
+  "status": "PENDING",
+  "customerId": "cust_123",
+  "createdAt": "2025-09-25T17:16:12.487Z",
+  "providerData": {
+    "clientSecret": "pi_mock_d3dbf18c530508e83bb97ba1_secret_563a6bb421ccdc555587bd0c387643da"
+  }
+}
+```
+
+### Currency Examples
+
+#### 1. Explicit Currency (Normalized)
+```bash
+curl -X POST http://localhost:6029/api/payments/intents \\
+  -H "x-tenant-id: your_tenant_id" \\
+  -H "idempotency-key: unique_key_123" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "amount": 2500,
+    "currency": "usd",        // Input: lowercase
+    "provider": "stripe",
+    "customerId": "cust_123"
+  }'
+
+# Response: currency = "USD" (normalized to uppercase)
+# Provider SDK gets: "usd" (normalized to lowercase)
+```
+
+#### 2. Tenant Default Currency
+```bash
+curl -X POST http://localhost:6029/api/payments/intents \\
+  -H "x-tenant-id: cmem0a46l00009f1i8v2nz6qz" \\  # Has USD default
+  -H "idempotency-key: unique_key_456" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "amount": 1000,
+    "provider": "paypal",     // No currency field
+    "customerId": "cust_456"
+  }'
+
+# Response: currency = "USD" (from tenant mapping)
+```
+
+#### 3. Unsupported Currency Error
+```bash
+curl -X POST http://localhost:6029/api/payments/intents \\
+  -H "x-tenant-id: your_tenant_id" \\
+  -H "idempotency-key: unique_key_789" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "amount": 500,
+    "currency": "RUB",        // Not in SUPPORTED_CURRENCIES
+    "provider": "stripe"
+  }'
+
+# HTTP 400 Response:
+{
+  "error": "Unsupported currency: RUB. Supported currencies: EUR, USD, PLN, GBP",
+  "code": "UNSUPPORTED_CURRENCY"
+}
+```
+
+### Implementation Details
+
+#### Currency Utilities (`src/utils/currency.js`)
+
+**Functions:**
+- `parseSupportedCurrencies(csvString)` - Parse CSV в Set
+- `parseTenantCurrencyMap(mapString)` - Parse tenant→currency mapping
+- `getTenantDefaultCurrency(tenantId)` - Get default for tenant
+- `normalizeAndValidateCurrency({input, tenantId})` - Main validation logic
+- `currencyForProvider(currency)` - Uppercase→lowercase for SDKs
+
+**Database Storage:**
+- Всегда uppercase format ("USD", "EUR", "PLN", "GBP")
+- Consistent с API responses
+
+**Provider Integration:**
+- SDK calls используют lowercase ("usd", "eur", "pln", "gbp")
+- Automatic conversion через `currencyForProvider()`
+
 ## 📋 Usage Examples
 
 ### 1. Send Invoice Email (Russian)
@@ -188,6 +317,9 @@ curl -X POST "http://localhost:6029/api/invoices/payment_123/email" \\
 
 ## 📊 Features
 
+✅ **Multi-Currency Support:** EUR/USD/PLN/GBP с tenant-specific defaults
+✅ **Currency Validation:** Строгая валидация с normalization (upper/lowercase)
+✅ **Provider Normalization:** Automatic uppercase→lowercase для SDK calls
 ✅ **Mandatory Idempotency:** Предотвращение дублирования через Idempotency-Key
 ✅ **Auto PDF Generation:** Автоматическая генерация PDF если отсутствует
 ✅ **Graceful Fallback:** 202 ответ при недоступности Notification Service
@@ -270,8 +402,11 @@ Payment Service интегрируется с Notification Service (port 6028) �
 }
 ```
 
-## 🧪 Stage 5 Implementation Notes
+## 🧪 Stage 6 Implementation Notes
 
+- **Multi-Currency:** Полная поддержка EUR/USD/PLN/GBP с валидацией
+- **Environment Configuration:** Flexible currency setup без изменения кода
+- **Provider Integration:** Корректная нормализация валют для SDK calls
 - **Mock PDF Generation:** Создает валидный PDF файл с базовой информацией
 - **Simulated Email:** Notification Service логирует отправку без реального SMTP
 - **Production Ready:** Архитектура готова для реального email провайдера
@@ -280,5 +415,5 @@ Payment Service интегрируется с Notification Service (port 6028) �
 
 ---
 
-**Current Status:** Stage 5 - Email delivery integration (60% complete)
-**Next Milestone:** Documentation completion & final testing
+**Current Status:** Stage 6 - Multi-currency support (100% complete)
+**Next Milestone:** Production deployment & real provider integration

@@ -268,15 +268,13 @@ router.post('/:paymentId/email', async (req: Request, res: Response) => {
         paymentId,
         to,
         subject: finalSubject,
-        locale,
         status: emailStatus,
-        providerResponse: emailResult,
-        sentAt: emailStatus === 'sent' ? new Date() : null,
-        metadata: {
+        providerResponse: {
+          ...emailResult,
+          locale,
           invoicePath,
-          generatedPDF: !pdfExists, // Track if we generated the PDF
-          notificationServiceUrl: NOTIFY_SERVICE_URL,
-          originalRequest: notificationPayload
+          generatedPDF: !pdfExists,
+          notificationServiceUrl: NOTIFY_SERVICE_URL
         }
       }
     });
