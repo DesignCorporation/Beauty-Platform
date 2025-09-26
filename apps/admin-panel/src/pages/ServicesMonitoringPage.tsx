@@ -922,6 +922,18 @@ export default function ServicesMonitoringPage() {
 
   return (
     <div className="space-y-6">
+      {/* Migration Banner - TEMPORARY during orchestrator migration (#21, #27) */}
+      <Alert className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950">
+        <AlertTriangle className="h-4 w-4 text-orange-600" />
+        <AlertTitle className="text-orange-800 dark:text-orange-200">Legacy Auto-Restore System Disabled</AlertTitle>
+        <AlertDescription className="text-orange-700 dark:text-orange-300">
+          The legacy bash auto-restore system has been disabled during migration to the new Node.js orchestrator.
+          Circuit breaker and alert management tabs are temporarily unavailable.
+          <br />
+          <span className="font-medium">GitHub Issues:</span> #21 (removal), #23 (orchestrator), #24 (API), #25 (UI), #27 (master tracking)
+        </AlertDescription>
+      </Alert>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1070,8 +1082,13 @@ export default function ServicesMonitoringPage() {
       <Tabs defaultValue="services" className="space-y-4">
         <TabsList>
           <TabsTrigger value="services">{t('monitoring.services')}</TabsTrigger>
-          <TabsTrigger value="circuit-breaker">Circuit Breaker</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+          {/* DISABLED during orchestrator migration (#21, #27) */}
+          <TabsTrigger value="circuit-breaker" disabled className="opacity-50 cursor-not-allowed">
+            Circuit Breaker (Disabled)
+          </TabsTrigger>
+          <TabsTrigger value="alerts" disabled className="opacity-50 cursor-not-allowed">
+            Alerts (Disabled)
+          </TabsTrigger>
           <TabsTrigger value="logs">{t('monitoring.logs')}</TabsTrigger>
           <TabsTrigger value="metrics">{t('monitoring.metrics')}</TabsTrigger>
         </TabsList>
