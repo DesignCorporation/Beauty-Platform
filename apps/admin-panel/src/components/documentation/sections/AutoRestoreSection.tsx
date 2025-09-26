@@ -128,7 +128,6 @@ export const AutoRestoreSection: React.FC = () => {
               <li><strong>auth-service</strong> (6021) — TSX сервер с MFA ключом</li>
               <li><strong>crm-api</strong> (6022), <strong>mcp-server</strong> (6025), <strong>images-api</strong> (6026), <strong>backup-service</strong> (6027)</li>
               <li><strong>postgresql</strong> — <code>systemctl start postgresql</code></li>
-              <li><strong>context7</strong> (6024) — <code>bun run dist/index.js --transport http --port 6024</code></li>
             </ul>
           </div>
         </CardContent>

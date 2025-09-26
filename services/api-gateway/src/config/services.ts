@@ -7,8 +7,10 @@ export interface ServiceConfig {
   healthCheck?: string;
 }
 
+// Услуги интегрированные с API Gateway на основе unified service registry
+// Только активные сервисы с gatewayPath (context7 и backup удалены)
 export const SERVICES: Record<string, ServiceConfig> = {
-  auth: {
+  'auth-service': {
     name: 'Auth Service',
     url: 'http://localhost:6021',
     path: '/auth',
@@ -16,7 +18,7 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 3,
     healthCheck: '/health'
   },
-  mcp: {
+  'mcp-server': {
     name: 'MCP Server',
     url: 'http://localhost:6025',
     path: '/mcp',
@@ -24,24 +26,15 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 2,
     healthCheck: '/health'
   },
-  // TEMPORARILY DISABLED during orchestrator migration (#26)
-  // backup: {
-  //   name: 'Backup Service',
-  //   url: 'http://localhost:6027',
-  //   path: '/backup',
-  //   timeout: 60000, // Backups can take longer
-  //   retries: 2,
-  //   healthCheck: '/health'
-  // },
-  images: {
+  'images-api': {
     name: 'Images API',
     url: 'http://localhost:6026',
     path: '/images',
-    timeout: 60000, // Image processing can take time
+    timeout: 60000,
     retries: 2,
     healthCheck: '/health'
   },
-  crm: {
+  'crm-api': {
     name: 'CRM API',
     url: 'http://localhost:6022',
     path: '/crm',
@@ -49,17 +42,7 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 3,
     healthCheck: '/health'
   },
-  // TEMPORARILY DISABLED during orchestrator migration (#26)
-  // External documentation service - non-critical for core platform
-  // context7: {
-  //   name: 'Context7 MCP',
-  //   url: 'http://localhost:6024',
-  //   path: '/context',
-  //   timeout: 15000,
-  //   retries: 2,
-  //   healthCheck: '/health'
-  // },
-  notifications: {
+  'notification-service': {
     name: 'Notification Service',
     url: 'http://localhost:6028',
     path: '/notifications',
@@ -67,7 +50,7 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 2,
     healthCheck: '/health'
   },
-  payments: {
+  'payment-service': {
     name: 'Payment Service',
     url: 'http://localhost:6029',
     path: '/payments',
@@ -75,15 +58,6 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 3,
     healthCheck: '/health'
   }
-  // ВРЕМЕННО ОТКЛЮЧЕНЫ ДО РЕАЛИЗАЦИИ:
-  // booking: {
-  //   name: 'Booking Service',
-  //   url: 'http://localhost:6022',
-  //   path: '/booking',
-  //   timeout: 30000,
-  //   retries: 3,
-  //   healthCheck: '/health'
-  // }
 };
 
 export const API_GATEWAY_CONFIG = {

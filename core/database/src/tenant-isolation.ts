@@ -17,35 +17,35 @@ export function tenantPrisma(tenantId: string | null) {
 function createTenantPrisma(tenantId: string | null) {
   return {
     // Tenants - без фильтрации (для админки)
-    tenant: prisma.tenant,
+    tenant: prisma.Tenant,
     
     // Users - с опциональной фильтрацией по tenant
     user: {
-      findMany: (args?: any) => prisma.user.findMany({
+      findMany: (args?: any) => prisma.User.findMany({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findFirst: (args?: any) => prisma.user.findFirst({
+      findFirst: (args?: any) => prisma.User.findFirst({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findUnique: (args: any) => prisma.user.findUnique({
+      findUnique: (args: any) => prisma.User.findUnique({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      create: (args: any) => prisma.user.create({
+      create: (args: any) => prisma.User.create({
         ...args,
         data: tenantId ? { ...args.data, tenantId } : args.data
       }),
-      update: (args: any) => prisma.user.update({
+      update: (args: any) => prisma.User.update({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      delete: (args: any) => prisma.user.delete({
+      delete: (args: any) => prisma.User.delete({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      count: (args?: any) => prisma.user.count({
+      count: (args?: any) => prisma.User.count({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       })
@@ -56,31 +56,31 @@ function createTenantPrisma(tenantId: string | null) {
     
     // Clients с фильтрацией по tenant
     client: {
-      findMany: (args?: any) => prisma.client.findMany({
+      findMany: (args?: any) => prisma.Client.findMany({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findFirst: (args?: any) => prisma.client.findFirst({
+      findFirst: (args?: any) => prisma.Client.findFirst({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findUnique: (args: any) => prisma.client.findUnique({
+      findUnique: (args: any) => prisma.Client.findUnique({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      create: (args: any) => prisma.client.create({
+      create: (args: any) => prisma.Client.create({
         ...args,
         data: tenantId ? { ...args.data, tenantId } : args.data
       }),
-      update: (args: any) => prisma.client.update({
+      update: (args: any) => prisma.Client.update({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      delete: (args: any) => prisma.client.delete({
+      delete: (args: any) => prisma.Client.delete({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      count: (args?: any) => prisma.client.count({
+      count: (args?: any) => prisma.Client.count({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       })
@@ -88,31 +88,31 @@ function createTenantPrisma(tenantId: string | null) {
     
     // Services с фильтрацией по tenant
     service: {
-      findMany: (args?: any) => prisma.service.findMany({
+      findMany: (args?: any) => prisma.Service.findMany({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findFirst: (args?: any) => prisma.service.findFirst({
+      findFirst: (args?: any) => prisma.Service.findFirst({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findUnique: (args: any) => prisma.service.findUnique({
+      findUnique: (args: any) => prisma.Service.findUnique({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      create: (args: any) => prisma.service.create({
+      create: (args: any) => prisma.Service.create({
         ...args,
         data: tenantId ? { ...args.data, tenantId } : args.data
       }),
-      update: (args: any) => prisma.service.update({
+      update: (args: any) => prisma.Service.update({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      delete: (args: any) => prisma.service.delete({
+      delete: (args: any) => prisma.Service.delete({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      count: (args?: any) => prisma.service.count({
+      count: (args?: any) => prisma.Service.count({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       })
@@ -120,31 +120,31 @@ function createTenantPrisma(tenantId: string | null) {
     
     // Appointments с фильтрацией по tenant
     appointment: {
-      findMany: (args?: any) => prisma.appointment.findMany({
+      findMany: (args?: any) => prisma.Appointment.findMany({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findFirst: (args?: any) => prisma.appointment.findFirst({
+      findFirst: (args?: any) => prisma.Appointment.findFirst({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      findUnique: (args: any) => prisma.appointment.findUnique({
+      findUnique: (args: any) => prisma.Appointment.findUnique({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      create: (args: any) => prisma.appointment.create({
+      create: (args: any) => prisma.Appointment.create({
         ...args,
         data: tenantId ? { ...args.data, tenantId } : args.data
       }),
-      update: (args: any) => prisma.appointment.update({
+      update: (args: any) => prisma.Appointment.update({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      delete: (args: any) => prisma.appointment.delete({
+      delete: (args: any) => prisma.Appointment.delete({
         ...args,
         where: tenantId ? { ...args.where, tenantId } : args.where
       }),
-      count: (args?: any) => prisma.appointment.count({
+      count: (args?: any) => prisma.Appointment.count({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       })
@@ -152,11 +152,11 @@ function createTenantPrisma(tenantId: string | null) {
     
     // Audit logs с фильтрацией по tenant
     auditLog: {
-      findMany: (args?: any) => prisma.auditLog.findMany({
+      findMany: (args?: any) => prisma.AuditLog.findMany({
         ...args,
         where: tenantId ? { ...args?.where, tenantId } : args?.where
       }),
-      create: (args: any) => prisma.auditLog.create({
+      create: (args: any) => prisma.AuditLog.create({
         ...args,
         data: tenantId ? { ...args.data, tenantId } : args.data
       })

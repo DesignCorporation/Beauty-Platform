@@ -1,8 +1,18 @@
 # 🧠 Claude Current Memory - Beauty Platform
 
-**Дата обновления:** 25.09.2025
+**Дата обновления:** 26.09.2025
 **Статус проекта:** 96% готовности, Production Ready
-**Моя роль:** Lead Technical Developer & Architecture Guardian
+
+## 👥 КОМАНДА РАЗРАБОТКИ
+- **[Sergio]** - Project Owner & Process Controller (контролирует все процессы)
+- **[Claude]** - Lead Technical Developer & Architecture Guardian (техническая разработка)
+- **[Codex]** - Product Manager & GitHub Integration (планирование, issues, roadmap)
+
+## ⚠️ ВАЖНОЕ ЗАМЕЧАНИЕ О ЯЗЫКОВОЙ ПОЛИТИКЕ
+
+**ЯЗЫК ОБЩЕНИЯ**: Мы используем русский язык исключительно для технической коммуникации и разработки. Это НЕ связано с политикой, географией или валютными предпочтениями. Русский язык выбран как основной язык технического общения в команде разработки для обеспечения эффективности коммуникации и документирования процессов.
+
+**ВАЖНО**: При работе с валютами, телефонными номерами и региональными настройками мы поддерживаем международные стандарты и используем общепринятые форматы (EUR/USD/GBP/PLN для валют, международные коды стран, etc.). Выбор языка интерфейса не влияет на техническую реализацию международной функциональности.
 
 ## 🎯 ТЕКУЩАЯ СИТУАЦИЯ
 
@@ -117,10 +127,11 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ Graceful error handling с mock данными
    - ✅ Все TypeScript типы экспортированы в UI пакет
 
-2. **Payment Service (6029)** ✅ STAGE 5 ПОЧТИ ЗАВЕРШЕН (PR #18)
-   **Branch:** `feature/payment-stage5-refunds-email` → PR #18 в `main`
+2. **Payment Service (6029)** ✅ STAGE 6 ПОЛНОСТЬЮ ЗАВЕРШЕН (25.09.2025)
+   **Multi-Currency Support**: EUR/USD/PLN/GBP + tenant defaults + currency validation + normalization
+   **Branch:** `feature/payment-service` - готов к merge в main
 
-## 🧾 PAYMENT SERVICE — ОПЕРАТИВНАЯ ПАМЯТЬ (Stage 2–5)
+## 🧾 PAYMENT SERVICE — ОПЕРАТИВНАЯ ПАМЯТЬ (Stage 2–6)
 
 - Порт: 6029; путь: `services/payment-service`
 - Критические правила:
@@ -145,6 +156,9 @@ app.use('/api', auth.strictTenantAuth);
   - `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `PAYPAL_WEBHOOK_ID`
   - `NOTIFY_SERVICE_URL` (напр. `http://localhost:6028/api/notify/email`), `NOTIFY_TOKEN`
   - `INVOICE_DEFAULT_LOCALE` (ru|en), `DATABASE_URL`, `JWT_SECRET`, `PORT=6029`
+  - `SUPPORTED_CURRENCIES="EUR,USD,PLN,GBP"` (CSV поддерживаемых валют)
+  - `DEFAULT_CURRENCY="EUR"` (глобальный дефолт валюты)
+  - `TENANT_DEFAULT_CURRENCY="TENANT_A=EUR,TENANT_B=USD"` (тенант-валюта мапинг)
 
 - База / Prisma:
   - Таблицы: `payments`, `payment_events`, `refunds`, `idempotency_keys`, `invoice_emails`
@@ -157,14 +171,20 @@ app.use('/api', auth.strictTenantAuth);
   - Смоук (без ключей): intents (оба провайдера), generate PDF, email (graceful при недоступности 6028), refunds (валидация), идемпотентность (повтор — тот же ответ)
    **GitHub Issue:** #17
 
-   ✅ **ЗАВЕРШЕННЫЕ ЭТАПЫ** (3 из 5):
+   ✅ **ЗАВЕРШЕННЫЕ ЭТАПЫ** (6 из 6):
    - ✅ **Шаг 1**: Database Models + Idempotency (Refund, InvoiceEmail, PaymentEvent, IdempotencyKey)
    - ✅ **Шаг 2**: Stripe/PayPal Refunds (Real SDK integration с fallback)
    - ✅ **Шаг 3**: Webhook Processing (Deduplication + status updates)
+   - ✅ **Шаг 4**: Email Delivery Integration (Notification Service 6028)
+   - ✅ **Шаг 5**: Documentation & Examples
+   - ✅ **Шаг 6**: Multi-Currency Support (EUR/USD/PLN/GBP + tenant defaults)
 
-   ⏳ **СЛЕДУЮЩИЕ ЭТАПЫ**:
-   - 🔄 **Шаг 4**: Email Delivery Integration (Notification Service 6028)
-   - ⏳ **Шаг 5**: Documentation & Examples
+   🎯 **STAGE 6 ПОЛНОСТЬЮ ЗАВЕРШЕН**:
+   - ✅ Мультивалютная поддержка с валидацией и нормализацией
+   - ✅ Environment configuration для гибкой настройки
+   - ✅ Tenant-specific defaults через `TENANT_DEFAULT_CURRENCY`
+   - ✅ Provider SDK integration с правильной нормализацией валют
+   - ✅ Comprehensive smoke tests пройдены (3/3)
 
 3. **Интеграция и доработки** ⏳
    - Добавить Notification Service в auto-restore систему
@@ -559,4 +579,23 @@ app.use('/api', auth.strictTenantAuth);
    - 📝 **GitHub обновлен**: Детальный progress update опубликован в Issue #17
 
 ---
-*Последнее обновление памяти: 25.09.2025 - PAYMENT SERVICE STAGE 5: 60% завершен (3/5 шагов), следующий milestone - email delivery integration*
+---
+
+## 🎯 ТЕКУЩИЕ ЗАДАЧИ (26.09.2025)
+
+### GitHub Issues от [Codex]:
+- **#21** Orchestrator: Remove legacy bash auto-restore
+- **#22** Orchestrator: Unified service registry
+- **#23** Orchestrator: Node.js process manager & auto-restore
+- **#24** Orchestrator: REST API & health model
+- **#25** Admin UI: New orchestrator monitoring dashboard
+- **#26** Gateway: prune unused services (context7, backup)
+
+### Статус обсуждения команды:
+- **[Sergio]**: Определяет логику работы и процессы
+- **[Claude]**: Предлагает объединить #21-25 в один комплексный issue для лучшего контекста
+- **[Codex]**: Ожидает решения по структуре задач
+
+---
+
+*Последнее обновление памяти: 26.09.2025 - Обновлена структура команды и добавлены текущие задачи Dev Orchestrator*

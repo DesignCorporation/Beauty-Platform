@@ -232,7 +232,6 @@
       "postgresql": "Main database (beauty_platform_new)",
       "backupService": "Automated backup and restore system",
       "crmApi": "Core CRM API for appointments and clients",
-      "context7": "Smart documentation and context system",
       "vscodeServer": "Cloud-based VS Code development environment",
       "landingPage": "Public landing page and marketing site"
     }

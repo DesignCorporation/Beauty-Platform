@@ -414,7 +414,7 @@ model Payment {
 
   // Provider data (generic)
   provider               String       // stripe, paypal, etc.
-  providerId             String?      // Provider's payment ID
+  providerId             String?      @map("provider_id") // Provider's payment ID
 
   // Customer reference
   customerId             String?      @map("customer_id") // БД использует snake_case

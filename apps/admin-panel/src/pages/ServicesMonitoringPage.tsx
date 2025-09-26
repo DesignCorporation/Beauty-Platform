@@ -287,16 +287,6 @@ export default function ServicesMonitoringPage() {
       dependencies: ['Auth Service', 'PostgreSQL']
     },
     {
-      name: 'Context7',
-      port: 6024,
-      url: 'http://localhost:6024',
-      description: t('monitoring.serviceDescription.context7'),
-      icon: FileText,
-      color: 'text-amber-600',
-      endpoints: ['/health', '/api/context', '/api/documentation'],
-      dependencies: []
-    },
-    {
       name: 'VS Code Server',
       port: 6080,
       url: 'http://localhost:6080',

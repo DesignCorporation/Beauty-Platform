@@ -147,14 +147,7 @@ Object.entries(SERVICES).forEach(([serviceKey, serviceConfig]) => {
   // CRM API expects /api/* paths
   if (serviceKey === 'crm') {
     pathRewrite = {
-      '^/crm(.*)$': '/api$1'  // /crm/appointments -> /api/appointments
-    };
-  }
-  
-  // Context7 MCP expects direct paths
-  if (serviceKey === 'context7') {
-    pathRewrite = {
-      '^/context(.*)$': '$1'  // /context/resolve -> /resolve
+      '^/api/crm(.*)$': '/api$1'  // /api/crm/clients -> /api/clients
     };
   }
 

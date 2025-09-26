@@ -19,7 +19,6 @@
 - MCP-интеграции:
   - `services/codex-mcp` — Codex MCP bridge (stdio) с ресурсами `beauty://*`
   - `beauty-mcp-server` (legacy REST, читает `CLAUDE.md`)
-  - `context7` (`npx @upstash/context7-mcp`) — внешняя документация библиотек
 - База: PostgreSQL `beauty_platform_new` с **tenant isolation** через `tenantPrisma(tenantId)`.
 
 ## Критические правила
@@ -38,8 +37,22 @@
 - Код моста: `services/codex-mcp/src/server.ts` (TypeScript + `@modelcontextprotocol/sdk`). Все новые ресурсы добавляем здесь.
 - Для динамических данных убедись, что HTTP MCP (`services/mcp-server`, порт 6025) запущен. Если оффлайн — ресурсы вернут предупреждение и позволят продолжить работу в офлайне.
 - Проверка подключённых MCP: `codex mcp list`. Чтобы перезапустить только мост: `cd services/codex-mcp && pnpm dev` (живой режим) или `pnpm start` для единичного запуска.
-- Внешняя документация: `context7` подключён через `npx @upstash/context7-mcp` (API-ключ указывать в `~/.codex/config.toml`, переменная `CONTEXT7_API_KEY`).
 - При обновлении памяти не забывай синхронизировать и `Codex.md`, и `CLAUDE.md` — мост подтянет изменения автоматически (кэш ~60 секунд).
+
+## Dev Orchestrator Migration (26.09.2025)
+- Master issue: **#27 Dev Orchestrator Migration - Master Tracking**.
+- Активные подзадачи:
+  - #21 Remove legacy bash auto-restore — стартовая задача (Stage 1: заглушки + чистка cron).
+  - #22 Unified service registry — единый конфиг для gateway/orchestrator/UI.
+  - #23 Node.js process manager & auto-restore — новый сервис управления процессами.
+  - #24 REST API & health model — `/orchestrator/*` endpoints, critical vs optional.
+  - #25 Admin UI monitoring dashboard — обновление ServicesMonitoringPage.
+  - #26 Gateway: prune unused services — отдельный фикс `/health` (должен быть закрыт первым).
+- Рабочий протокол:
+  - Каждую завершённую подзадачу закрывать с комментарием (что сделано, где PR, какие проверки) и отмечать чекбокс в #27.
+  - При обновлении памяти фиксировать статус Stage 1/Stage 2. Текущий статус: **Stage 1 (legacy bash отключаем)**.
+  - Временно все `/api/auto-restore/*` маршруты должны возвращать 503 с сообщением «Legacy auto-restore disabled». Admin UI отображает баннер о миграции.
+  - Коммиты/PR помечать `fixes #NN` и `refs #27`, чтобы история эпика была связана.
 
 ## Аутентификация и токены
 - Auth Service (`services/auth-service`) выдаёт JWT c полями `{ userId, tenantId, role, email, type }`.
@@ -57,6 +70,7 @@
 - `smart-restore-manager.sh` — центральный восстановитель (скрипты `restore-*.sh` просто делегируют сюда).
 - Master orchestrator (`deployment/auto-restore/master-orchestrator.sh`) и health monitor (`health-monitor.sh`) хранят PID в `deployment/auto-restore/run/` и читают `.env`.
 - Health monitor проверяет HTTP код; для API Gateway `503` считается «degraded», но засчитывается как успех (остальное — падение).
+- ⚠️ Эти bash-скрипты считаются legacy и удаляются в рамках #21. Не добавлять новых зависимостей.
 - Telegram-оповещения активированы (`TELEGRAM_BOT_TOKEN=8290990659:...`, `TELEGRAM_CHAT_ID=403608381`, `TELEGRAM_ENABLED=true`). Тест от бота `@Alarmbeauty_bot` уже отправлен.
 - Если добавить чат, обновить `.env` и перезапустить orchestrator (`smart-restore-manager.sh restore auth-service` не нужен, достаточно перезапуска master/health).
 - Логи: `logs/alerts.log`, `logs/critical-alerts.log`, `logs/health-monitor.log`, `logs/master-orchestrator.out`.
@@ -77,7 +91,7 @@
 1. Прочитать `Codex.md` (этот файл) и `CLAUDE.md` для актуального контекста.
 2. Проверить свежие логи (особенно `crm-api-auth.log`, `logs/auto-restore/*`).
 3. Убедиться, что нужные сервисы running (health-check через `curl http://localhost:6020/health` + smart-restore status) и что HTTP MCP (`http://localhost:6025/health`) отвечает.
-4. `codex mcp list` — убедиться, что `beauty-codex` и `context7` в статусе `configured` (при необходимости перезапусти `pnpm start` в `services/codex-mcp`).
+4. `codex mcp list` — убедиться, что `beauty-codex` в статусе `configured` (при необходимости перезапусти `pnpm start` в `services/codex-mcp`).
 5. При правках не забывать обновлять `Codex.md` — фиксировать новые правила, багфиксы, полезные пути.
 
 ## План по обновлению файла

@@ -122,6 +122,10 @@ app.use('/api/monitoring', monitoringRoutes);
 // Auto-Restore management routes
 app.use('/api/auto-restore', autoRestoreRoutes);
 
+// New Orchestrator API with circuit breaker and advanced state management
+import orchestratorRoutes from './routes/orchestrator';
+app.use('/orchestrator', orchestratorRoutes);
+
 // Main API routes (proxy to microservices)
 app.use('/api', proxyRoutes);
 
@@ -140,6 +144,7 @@ app.use('*', (req, res) => {
       '/api/system/*',
       '/api/monitoring/*',
       '/api/auto-restore/*',
+      '/orchestrator/*',
       '/api/images/*',
       '/api/mcp/*',
       '/api/crm/*',
