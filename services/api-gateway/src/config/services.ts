@@ -24,14 +24,15 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 2,
     healthCheck: '/health'
   },
-  backup: {
-    name: 'Backup Service',
-    url: 'http://localhost:6027',
-    path: '/backup',
-    timeout: 60000, // Backups can take longer
-    retries: 2,
-    healthCheck: '/health'
-  },
+  // TEMPORARILY DISABLED during orchestrator migration (#26)
+  // backup: {
+  //   name: 'Backup Service',
+  //   url: 'http://localhost:6027',
+  //   path: '/backup',
+  //   timeout: 60000, // Backups can take longer
+  //   retries: 2,
+  //   healthCheck: '/health'
+  // },
   images: {
     name: 'Images API',
     url: 'http://localhost:6026',
@@ -48,14 +49,16 @@ export const SERVICES: Record<string, ServiceConfig> = {
     retries: 3,
     healthCheck: '/health'
   },
-  context7: {
-    name: 'Context7 MCP',
-    url: 'http://localhost:6024',
-    path: '/context',
-    timeout: 15000,
-    retries: 2,
-    healthCheck: '/health'
-  },
+  // TEMPORARILY DISABLED during orchestrator migration (#26)
+  // External documentation service - non-critical for core platform
+  // context7: {
+  //   name: 'Context7 MCP',
+  //   url: 'http://localhost:6024',
+  //   path: '/context',
+  //   timeout: 15000,
+  //   retries: 2,
+  //   healthCheck: '/health'
+  // },
   notifications: {
     name: 'Notification Service',
     url: 'http://localhost:6028',
