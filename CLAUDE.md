@@ -581,20 +581,61 @@ app.use('/api', auth.strictTenantAuth);
 ---
 ---
 
-## 🎯 ТЕКУЩИЕ ЗАДАЧИ (26.09.2025)
+## 🎯 ЗАВЕРШЕННЫЕ ЗАДАЧИ (26.09.2025)
+
+### ✅ **Stage 3 Orchestra​tion Migration - ЗАВЕРШЕНО**
+
+**GitHub Issue #23** полностью реализован с следующими улучшениями:
+
+#### 1. ✅ **Unified Service Registry с новой схемой `run`**
+```typescript
+// Новая структура run configuration
+run: {
+  command: string;                    // 'pnpm', 'node', 'systemctl'
+  args: string[];                     // ['dev'], ['src/server.js']
+  cwd: string;                        // относительный путь от корня проекта
+  env?: Record<string, string>;       // дополнительные переменные среды
+  managed?: 'internal' | 'external'; // тип управления (default: 'internal')
+}
+```
+
+**Примеры конфигурации:**
+- `api-gateway` → `{ command: 'pnpm', args: ['dev'], cwd: 'services/api-gateway' }`
+- `auth-service` → `{ command: 'pnpm', args: ['dev'], cwd: 'services/auth-service', env: { MFA_MASTER_KEY: '...' } }`
+- `postgresql` → `{ command: '', args: [], cwd: '.', managed: 'external' }`
+
+#### 2. ✅ **ProcessManager с поддержкой новой схемы**
+- **PATH аугментация**: автоматическое добавление `/root/.local/share/pnpm` и других путей для корректной работы pnpm
+- **Working directory resolution**: использование `path.resolve(projectRoot, run.cwd)` для корректных путей
+- **Environment merging**: объединение `process.env`, `run.env` и PATH аугментации
+- **External service handling**: сервисы с `managed: 'external'` пропускаются при start/stop/restart
+
+#### 3. ✅ **API Updates с 501 responses**
+- **GET** `/orchestrator/status-all` включает поля `managed` и `cwd`
+- **POST** `/orchestrator/services/:id/actions` возвращает 501 для внешних сервисов
+- **Batch operations** корректно обрабатывают внешние сервисы
+- **External services** показывают статус `'external'` в API responses
+
+#### 4. ✅ **Comprehensive Unit Tests**
+- **ProcessManager тесты** с mock execa для проверки:
+  - Корректного разрешения working directory
+  - PATH аугментации для package managers
+  - Обработки внешних сервисов
+  - Environment variable merging
+- **Jest configuration** для TypeScript и мocking
+
+#### 5. ✅ **Решенные проблемы**
+- **ENOENT ошибки**: исправлены через PATH аугментацию
+- **systemctl ошибки**: внешние сервисы больше не управляются orchestrator
+- **Working directory**: корректное разрешение путей от project root
+- **Environment isolation**: правильная изоляция переменных среды по сервисам
+
+## 🎯 ОСТАВШИЕСЯ ЗАДАЧИ
 
 ### GitHub Issues от [Codex]:
-- **#21** Orchestrator: Remove legacy bash auto-restore
-- **#22** Orchestrator: Unified service registry
-- **#23** Orchestrator: Node.js process manager & auto-restore
-- **#24** Orchestrator: REST API & health model
+- **#24** Orchestrator: REST API & health model (в процессе)
 - **#25** Admin UI: New orchestrator monitoring dashboard
 - **#26** Gateway: prune unused services (context7, backup)
-
-### Статус обсуждения команды:
-- **[Sergio]**: Определяет логику работы и процессы
-- **[Claude]**: Предлагает объединить #21-25 в один комплексный issue для лучшего контекста
-- **[Codex]**: Ожидает решения по структуре задач
 
 ---
 

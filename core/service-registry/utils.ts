@@ -218,6 +218,19 @@ export function validateServiceConfig(service: ServiceConfig): string[] {
   if (!service.directory.trim()) errors.push('Service directory is required');
   if (!service.startCommand.trim()) errors.push('Start command is required');
 
+  // Run config validation
+  if (!service.run) {
+    errors.push('Run configuration is required');
+  } else {
+    if (!service.run.cwd?.trim()) errors.push('Run.cwd is required');
+    if (service.run.managed === 'internal' && !service.run.command?.trim()) {
+      errors.push('Run.command is required for internally managed services');
+    }
+    if (service.run.managed !== 'internal' && service.run.managed !== 'external') {
+      errors.push('Run.managed must be either "internal" or "external"');
+    }
+  }
+
   // Port validation
   if (service.port < 1 || service.port > 65535) {
     errors.push('Port must be between 1 and 65535');
@@ -377,5 +390,74 @@ export function getRegistryStats() {
       [ServiceCriticality.Important]: getServicesByCriticality(ServiceCriticality.Important).length,
       [ServiceCriticality.Optional]: getServicesByCriticality(ServiceCriticality.Optional).length,
     }
+  };
+}
+
+// ========== NEW RUN CONFIG HELPERS ==========
+
+/**
+ * Get services that can be managed internally by orchestrator
+ * @returns Array of services with run.managed === 'internal'
+ */
+export function getInternallyManagedServices(): ServiceConfig[] {
+  return getAllServices().filter(service =>
+    service.run?.managed !== 'external'
+  );
+}
+
+/**
+ * Get services that are managed externally (not by orchestrator)
+ * @returns Array of services with run.managed === 'external'
+ */
+export function getExternallyManagedServices(): ServiceConfig[] {
+  return getAllServices().filter(service =>
+    service.run?.managed === 'external'
+  );
+}
+
+/**
+ * Get services by command type
+ * @param command - Command name (e.g., 'pnpm', 'node')
+ * @returns Array of services using specified command
+ */
+export function getServicesByCommand(command: string): ServiceConfig[] {
+  return getAllServices().filter(service =>
+    service.run?.command === command
+  );
+}
+
+/**
+ * Check if service is externally managed
+ * @param serviceId - Service ID
+ * @returns true if service is managed externally
+ */
+export function isExternallyManaged(serviceId: string): boolean {
+  const service = findServiceById(serviceId);
+  return service?.run?.managed === 'external';
+}
+
+/**
+ * Get full working directory path for service
+ * @param service - Service configuration
+ * @param projectRoot - Project root path
+ * @returns Absolute path to service working directory
+ */
+export function getServiceWorkingDirectory(service: ServiceConfig, projectRoot: string): string {
+  const cwd = service.run?.cwd || service.directory; // fallback to legacy directory
+  return require('path').resolve(projectRoot, cwd);
+}
+
+/**
+ * Build environment for service execution
+ * @param service - Service configuration
+ * @param baseEnv - Base environment variables (usually process.env)
+ * @returns Combined environment variables
+ */
+export function buildServiceEnvironment(service: ServiceConfig, baseEnv: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  return {
+    ...baseEnv,
+    ...service.run?.env,
+    // Ensure PORT is set
+    PORT: service.port.toString()
   };
 }

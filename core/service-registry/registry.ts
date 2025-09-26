@@ -24,9 +24,16 @@ const services: Record<string, ServiceConfig> = {
     name: 'Landing Page',
     description: 'SEO-optimized marketing landing page for beauty salons',
     port: 6000,
-    directory: 'apps/landing-page',
-    startCommand: 'PORT=6000 pnpm dev',
+    directory: 'apps/landing-page', // deprecated - use run.cwd
+    startCommand: 'PORT=6000 pnpm dev', // deprecated - use run
     healthEndpoint: '/',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'apps/landing-page',
+      env: { PORT: '6000' },
+      managed: 'internal'
+    },
     type: ServiceType.Frontend,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Active,
@@ -51,9 +58,16 @@ const services: Record<string, ServiceConfig> = {
     name: 'Salon CRM',
     description: 'Main CRM application for beauty salon management',
     port: 6001,
-    directory: 'apps/salon-crm',
-    startCommand: 'VITE_API_URL=http://localhost:6022/api pnpm dev',
+    directory: 'apps/salon-crm', // deprecated - use run.cwd
+    startCommand: 'VITE_API_URL=http://localhost:6022/api pnpm dev', // deprecated - use run
     healthEndpoint: '/',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'apps/salon-crm',
+      env: { VITE_API_URL: 'http://localhost:6022/api' },
+      managed: 'internal'
+    },
     type: ServiceType.Frontend,
     criticality: ServiceCriticality.Critical,
     status: ServiceStatus.Active,
@@ -78,9 +92,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'Admin Panel',
     description: 'Administrative dashboard with system monitoring and documentation',
     port: 6002,
-    directory: 'apps/admin-panel',
-    startCommand: 'pnpm dev',
+    directory: 'apps/admin-panel', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'apps/admin-panel',
+      managed: 'internal'
+    },
     type: ServiceType.Frontend,
     criticality: ServiceCriticality.Critical,
     status: ServiceStatus.Active,
@@ -105,9 +125,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'Client Portal',
     description: 'Public booking portal for salon clients',
     port: 6003,
-    directory: 'apps/client-booking',
-    startCommand: 'pnpm dev',
+    directory: 'apps/client-booking', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'apps/client-booking',
+      managed: 'internal'
+    },
     type: ServiceType.Frontend,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Active,
@@ -133,9 +159,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'API Gateway',
     description: 'Central API gateway handling routing, authentication, and rate limiting',
     port: 6020,
-    directory: 'services/api-gateway',
-    startCommand: 'pnpm dev',
+    directory: 'services/api-gateway', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/api-gateway',
+      managed: 'internal'
+    },
     type: ServiceType.Gateway,
     criticality: ServiceCriticality.Critical,
     status: ServiceStatus.Active,
@@ -162,9 +194,16 @@ const services: Record<string, ServiceConfig> = {
     name: 'Auth Service',
     description: 'Authentication and authorization service with MFA support',
     port: 6021,
-    directory: 'services/auth-service',
-    startCommand: 'MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b pnpm dev',
+    directory: 'services/auth-service', // deprecated - use run.cwd
+    startCommand: 'MFA_MASTER_KEY=49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/auth-service',
+      env: { MFA_MASTER_KEY: '49dd29bc186073af4bdb05f6fd074317a6045409f1ef540696ed05ad09b38c1b' },
+      managed: 'internal'
+    },
     type: ServiceType.Core,
     criticality: ServiceCriticality.Critical,
     status: ServiceStatus.Active,
@@ -191,9 +230,16 @@ const services: Record<string, ServiceConfig> = {
     name: 'CRM API',
     description: 'Core CRM business logic API for appointments, clients, and services',
     port: 6022,
-    directory: 'services/crm-api',
-    startCommand: 'DATABASE_URL=postgresql://beauty_platform_user:secure_password@localhost:6100/beauty_platform_new pnpm dev',
+    directory: 'services/crm-api', // deprecated - use run.cwd
+    startCommand: 'DATABASE_URL=postgresql://beauty_platform_user:secure_password@localhost:6100/beauty_platform_new pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/crm-api',
+      env: { DATABASE_URL: 'postgresql://beauty_platform_user:secure_password@localhost:6100/beauty_platform_new' },
+      managed: 'internal'
+    },
     type: ServiceType.Core,
     criticality: ServiceCriticality.Critical,
     status: ServiceStatus.Active,
@@ -219,9 +265,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'MCP Server',
     description: 'Model Context Protocol server for AI integrations and documentation',
     port: 6025,
-    directory: 'services/mcp-server',
-    startCommand: 'pnpm dev',
+    directory: 'services/mcp-server', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/mcp-server',
+      managed: 'internal'
+    },
     type: ServiceType.AI,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Active,
@@ -247,9 +299,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'Images API',
     description: 'Image upload, processing, and serving service',
     port: 6026,
-    directory: 'services/images-api',
-    startCommand: 'pnpm dev',
+    directory: 'services/images-api', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/images-api',
+      managed: 'internal'
+    },
     type: ServiceType.Media,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Active,
@@ -276,9 +334,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'Notification Service',
     description: 'Email, SMS, and push notification delivery service',
     port: 6028,
-    directory: 'services/notification-service',
-    startCommand: 'pnpm dev',
+    directory: 'services/notification-service', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/notification-service',
+      managed: 'internal'
+    },
     type: ServiceType.Core,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Active,
@@ -305,9 +369,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'Payment Service',
     description: 'Payment processing with Stripe/PayPal integration and invoice generation',
     port: 6029,
-    directory: 'services/payment-service',
-    startCommand: 'pnpm dev',
+    directory: 'services/payment-service', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/payment-service',
+      managed: 'internal'
+    },
     type: ServiceType.Business,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Active,
@@ -336,9 +406,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'PostgreSQL Database',
     description: 'Primary database with multi-tenant support',
     port: 6100,
-    directory: 'external',
-    startCommand: 'systemctl start postgresql',
+    directory: 'external', // deprecated - use run.cwd
+    startCommand: 'systemctl start postgresql', // deprecated - use run
     healthEndpoint: '/custom-health',
+    run: {
+      command: '',
+      args: [],
+      cwd: '.',
+      managed: 'external'
+    },
     type: ServiceType.Infrastructure,
     criticality: ServiceCriticality.Critical,
     status: ServiceStatus.Active,
@@ -364,9 +440,15 @@ const services: Record<string, ServiceConfig> = {
     name: 'Backup Service',
     description: 'Automated database and file backup service',
     port: 6027,
-    directory: 'services/backup-service',
-    startCommand: 'pnpm dev',
+    directory: 'services/backup-service', // deprecated - use run.cwd
+    startCommand: 'pnpm dev', // deprecated - use run
     healthEndpoint: '/health',
+    run: {
+      command: 'pnpm',
+      args: ['dev'],
+      cwd: 'services/backup-service',
+      managed: 'internal'
+    },
     type: ServiceType.Utility,
     criticality: ServiceCriticality.Optional,
     status: ServiceStatus.Disabled, // Temporarily disabled during migration

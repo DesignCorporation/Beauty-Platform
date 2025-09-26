@@ -36,6 +36,17 @@ export interface EnvironmentVariable {
   description?: string;
 }
 
+/**
+ * Service runtime execution configuration
+ */
+export interface ServiceRunConfig {
+  command: string;                    // Executable command (e.g., 'pnpm', 'node', 'systemctl')
+  args: string[];                     // Command arguments (e.g., ['dev'], ['src/server.js'])
+  cwd: string;                        // Working directory relative to project root
+  env?: Record<string, string>;       // Additional environment variables
+  managed?: 'internal' | 'external'; // Management type - default 'internal'
+}
+
 export interface ServiceConfig {
   // Identity
   id: string;                    // Unique service identifier (kebab-case)
@@ -44,9 +55,10 @@ export interface ServiceConfig {
 
   // Runtime Configuration
   port: number;                  // Service port
-  directory: string;             // Relative path from project root
-  startCommand: string;          // Command to start service (with env vars)
+  directory: string;             // Relative path from project root (deprecated - use run.cwd)
+  startCommand: string;          // Command to start service (deprecated - use run)
   healthEndpoint: string;        // Health check endpoint path
+  run: ServiceRunConfig;         // Service execution configuration
 
   // Classification & Tagging
   type: ServiceType;             // Service category

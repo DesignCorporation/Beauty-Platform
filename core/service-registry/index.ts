@@ -12,7 +12,8 @@ export type {
   UnifiedServiceRegistry,
   EnvironmentVariable,
   ServiceFilter,
-  StartupOrder
+  StartupOrder,
+  ServiceRunConfig
 } from './types';
 
 export {
@@ -57,7 +58,15 @@ export {
 
   // API Gateway интеграция
   getGatewayServices,
-  convertToLegacyGatewayConfig
+  convertToLegacyGatewayConfig,
+
+  // Run config helpers (NEW)
+  getInternallyManagedServices,
+  getExternallyManagedServices,
+  getServicesByCommand,
+  isExternallyManaged,
+  getServiceWorkingDirectory,
+  buildServiceEnvironment
 } from './utils';
 
 // Re-export константы для удобства
