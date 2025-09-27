@@ -11,7 +11,7 @@ config();
 
 import { API_GATEWAY_CONFIG } from './config/services';
 import { metricsMiddleware, metricsRoute } from './middleware/metrics';
-import { healthChecker, healthRoute, readinessRoute } from './middleware/health';
+import { healthChecker, healthRoute, readinessRoute, servicesHealthRoute } from './middleware/health';
 import proxyRoutes from './routes/proxy';
 import systemRoutes from './routes/system';
 import autoRestoreRoutes from './routes/auto-restore';
@@ -60,7 +60,8 @@ app.use((req, res, next) => {
   // НО включаем парсинг для локальных роутов: /api/monitoring/, /api/system/
   if (req.path.startsWith('/api/') && 
       !req.path.startsWith('/api/monitoring/') && 
-      !req.path.startsWith('/api/system/')) {
+      !req.path.startsWith('/api/system/') &&
+      !req.path.startsWith('/api/orchestrator/')) {
     return next(); // Пропускаем парсинг для proxy роутов
   }
   // Для всех остальных (включая /api/monitoring/ и /api/system/) используем стандартный парсинг
@@ -71,7 +72,8 @@ app.use((req, res, next) => {
   // Аналогично для urlencoded
   if (req.path.startsWith('/api/') && 
       !req.path.startsWith('/api/monitoring/') && 
-      !req.path.startsWith('/api/system/')) {
+      !req.path.startsWith('/api/system/') &&
+      !req.path.startsWith('/api/orchestrator/')) {
     return next(); 
   }
   express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
@@ -93,6 +95,10 @@ app.use(metricsMiddleware);
 app.get('/health', healthRoute);
 app.get('/ready', readinessRoute);
 app.get('/metrics', metricsRoute);
+
+// Отдельные health метрики для сервисов (разделение gateway/services)
+app.get('/services/health', servicesHealthRoute); // Все сервисы
+app.get('/services/health/:service', servicesHealthRoute); // Конкретный сервис
 
 // Gateway info route
 app.get('/info', (req, res) => {
@@ -122,6 +128,10 @@ app.use('/api/monitoring', monitoringRoutes);
 // Auto-Restore management routes
 app.use('/api/auto-restore', autoRestoreRoutes);
 
+// New Orchestrator API with circuit breaker and advanced state management
+import orchestratorRoutes from './routes/orchestrator';
+app.use('/api/orchestrator', orchestratorRoutes);
+
 // Main API routes (proxy to microservices)
 app.use('/api', proxyRoutes);
 
@@ -140,6 +150,7 @@ app.use('*', (req, res) => {
       '/api/system/*',
       '/api/monitoring/*',
       '/api/auto-restore/*',
+      '/orchestrator/*',
       '/api/images/*',
       '/api/mcp/*',
       '/api/crm/*',
@@ -198,8 +209,8 @@ app.listen(PORT, HOST, () => {
   console.log('  - /api/system/* (System monitoring endpoints)');
   console.log('  - /api/images/* (Images API proxy)');
   console.log('  - /api/mcp/* (MCP Server proxy)');
+  console.log('  - /api/orchestrator/* (Orchestrator control API)');
   console.log('  - /api/crm/* (CRM API proxy)');
-  console.log('  - /api/context/* (Context7 MCP proxy)');
   console.log('  - /api/backup/* (Backup Service proxy)');
   console.log('  - /api/booking/* (Booking Service proxy - planned)');
   console.log('  - /api/notifications/* (Notification Service proxy - planned)');

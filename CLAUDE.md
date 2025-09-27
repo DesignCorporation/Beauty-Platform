@@ -1,18 +1,29 @@
 # 🧠 Claude Current Memory - Beauty Platform
 
-**Дата обновления:** 22.09.2025
-**Статус проекта:** 95% готовности, Production Ready
-**Моя роль:** Lead Technical Developer & Architecture Guardian
+**Дата обновления:** 26.09.2025
+**Статус проекта:** 96% готовности, Production Ready
+
+## 👥 КОМАНДА РАЗРАБОТКИ
+- **[Sergio]** - Project Owner & Process Controller (контролирует все процессы)
+- **[Claude]** - Lead Technical Developer & Architecture Guardian (техническая разработка)
+- **[Codex]** - Product Manager & GitHub Integration (планирование, issues, roadmap)
+
+## ⚠️ ВАЖНОЕ ЗАМЕЧАНИЕ О ЯЗЫКОВОЙ ПОЛИТИКЕ
+
+**ЯЗЫК ОБЩЕНИЯ**: Мы используем русский язык исключительно для технической коммуникации и разработки. Это НЕ связано с политикой, географией или валютными предпочтениями. Русский язык выбран как основной язык технического общения в команде разработки для обеспечения эффективности коммуникации и документирования процессов.
+
+**ВАЖНО**: При работе с валютами, телефонными номерами и региональными настройками мы поддерживаем международные стандарты и используем общепринятые форматы (EUR/USD/GBP/PLN для валют, международные коды стран, etc.). Выбор языка интерфейса не влияет на техническую реализацию международной функциональности.
 
 ## 🎯 ТЕКУЩАЯ СИТУАЦИЯ
 
-### ✅ Готовые сервисы (9 из 9):
+### ✅ Готовые сервисы (10 из 10):
 - **Landing Page** (6000), **Auth Service** (6021), **Admin Panel** (6002)
 - **Salon CRM** (6001), **Client Portal** (6003), **MCP Server** (6025)
 - **Images API** (6026), **Notification Service** (6028), **Database** PostgreSQL beauty_platform_new
+- **Payment Service** (6029) - ✅ **SMOKE TESTS ПРОЙДЕНЫ** (PDF generation работает, критические проблемы исправлены)
 
-### ⏳ В разработке:
-- **Payment Service** (6029) - следующая приоритетная задача
+### 🏁 Финализация завершена:
+- **Payment Service Stage 4+** - Готов к production deployment с PDF generation
 
 ## 📚 КАК ЭФФЕКТИВНО ЧИТАТЬ MCP ПАМЯТЬ
 
@@ -116,11 +127,64 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ Graceful error handling с mock данными
    - ✅ Все TypeScript типы экспортированы в UI пакет
 
-2. **Payment Service (6029)** ⏳ ПРИОРИТЕТ #1
-   - Stripe/PayPal интеграция с webhook поддержкой
-   - Multi-currency support (EUR/PLN/USD)
-   - PDF invoice generation через puppeteer
-   - Raw body middleware для Stripe webhook signatures
+2. **Payment Service (6029)** ✅ STAGE 6 ПОЛНОСТЬЮ ЗАВЕРШЕН (25.09.2025)
+   **Multi-Currency Support**: EUR/USD/PLN/GBP + tenant defaults + currency validation + normalization
+   **Branch:** `feature/payment-service` - готов к merge в main
+
+## 🧾 PAYMENT SERVICE — ОПЕРАТИВНАЯ ПАМЯТЬ (Stage 2–6)
+
+- Порт: 6029; путь: `services/payment-service`
+- Критические правила:
+  - Все мутации только через `tenantPrisma(tenantId)`; в вебхуках — `globalPrisma` (read) → получаем `tenantId` → далее только `tenantPrisma`.
+  - `/api/*` за `@beauty-platform/shared-middleware` (JWT httpOnly). `/webhooks/*` без auth, raw body + подписи.
+  - Идемпотентность POST: `/api/payments/intents`, `/api/refunds`, `/api/invoices/:paymentId/email` по заголовку `Idempotency-Key` (TTL 24ч). Повтор — тот же ответ.
+  - Дедупликация вебхуков по `PaymentEvent.eventId` (unique). Повтор события → 200 OK без изменений.
+
+- Эндпоинты:
+  - POST `/api/payments/intents` — Stripe/PayPal (live при ключах, иначе fallback)
+  - POST `/api/refunds` — возвраты Stripe/PayPal (partial/full), идемпотентность
+  - POST `/api/invoices/:paymentId/generate` — PDF (Puppeteer) → `/tmp/invoices/<paymentId>.pdf` (возврат `{ paymentId,url,size,generatedAt }`)
+  - POST `/api/invoices/:paymentId/email` — отправка PDF через Notification Service (6028), автогенерация при отсутствии, идемпотентность
+  - Вебхуки: POST `/webhooks/stripe`, POST `/webhooks/paypal` — подписи/заголовки, dedupe, обновление статусов платежей/рефандов
+
+- Провайдеры:
+  - Stripe: `paymentIntents.create`, `refunds.create`, `webhooks.constructEvent` при `whsec_*`; безопасный fallback без ключей
+  - PayPal: `orders.create` и refunds (captures/orders), sandbox/prod detection; заголовки/валидация вебхуков; fallback без ключей
+
+- ENV (ключевые):
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+  - `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `PAYPAL_WEBHOOK_ID`
+  - `NOTIFY_SERVICE_URL` (напр. `http://localhost:6028/api/notify/email`), `NOTIFY_TOKEN`
+  - `INVOICE_DEFAULT_LOCALE` (ru|en), `DATABASE_URL`, `JWT_SECRET`, `PORT=6029`
+  - `SUPPORTED_CURRENCIES="EUR,USD,PLN,GBP"` (CSV поддерживаемых валют)
+  - `DEFAULT_CURRENCY="EUR"` (глобальный дефолт валюты)
+  - `TENANT_DEFAULT_CURRENCY="TENANT_A=EUR,TENANT_B=USD"` (тенант-валюта мапинг)
+
+- База / Prisma:
+  - Таблицы: `payments`, `payment_events`, `refunds`, `idempotency_keys`, `invoice_emails`
+  - В БД snake_case: `tenant_id`, `created_at`, `updated_at`, `provider_id`, `payment_id`, `event_id`, `received_at`, `provider_refund_id`, `request_hash`, `expires_at`, `provider_response`
+  - В `core/database/prisma/schema.prisma` — обязательно выставить `@map("snake_case")` для всех перечисленных полей (несоответствие приводит к падениям middleware tenant)
+
+- Операционный чек-лист:
+  - Конфликт порта 6029: очистить — `sudo lsof -ti:6029 | xargs kill -9`; убедиться, что оркестратор не поднимает дубликаты
+  - Health: `curl http://localhost:6029/health` → `{ "status": "ok" }`
+  - Смоук (без ключей): intents (оба провайдера), generate PDF, email (graceful при недоступности 6028), refunds (валидация), идемпотентность (повтор — тот же ответ)
+   **GitHub Issue:** #17
+
+   ✅ **ЗАВЕРШЕННЫЕ ЭТАПЫ** (6 из 6):
+   - ✅ **Шаг 1**: Database Models + Idempotency (Refund, InvoiceEmail, PaymentEvent, IdempotencyKey)
+   - ✅ **Шаг 2**: Stripe/PayPal Refunds (Real SDK integration с fallback)
+   - ✅ **Шаг 3**: Webhook Processing (Deduplication + status updates)
+   - ✅ **Шаг 4**: Email Delivery Integration (Notification Service 6028)
+   - ✅ **Шаг 5**: Documentation & Examples
+   - ✅ **Шаг 6**: Multi-Currency Support (EUR/USD/PLN/GBP + tenant defaults)
+
+   🎯 **STAGE 6 ПОЛНОСТЬЮ ЗАВЕРШЕН**:
+   - ✅ Мультивалютная поддержка с валидацией и нормализацией
+   - ✅ Environment configuration для гибкой настройки
+   - ✅ Tenant-specific defaults через `TENANT_DEFAULT_CURRENCY`
+   - ✅ Provider SDK integration с правильной нормализацией валют
+   - ✅ Comprehensive smoke tests пройдены (3/3)
 
 3. **Интеграция и доработки** ⏳
    - Добавить Notification Service в auto-restore систему
@@ -498,5 +562,112 @@ app.use('/api', auth.strictTenantAuth);
    - ✅ **РЕЗУЛЬТАТ**: Auto-restore система полностью восстановлена, MCP Server успешно восстановлен через API
    - ✅ **ФАЙЛЫ ОБНОВЛЕНЫ**: `/services/api-gateway/src/routes/auto-restore.ts:7-9`
 
+19. **🔄 PAYMENT SERVICE - STAGE 5 PROGRESS (22.09.2025)**:
+   - ✅ **GitHub Issue #17 создан**: Полные технические спецификации Stage 5
+   - ✅ **Ветка создана**: `feature/payment-stage5-refunds-email`
+   - ✅ **Шаг 1-3 завершены** (60% прогресса):
+     - ✅ Database models: Refund, InvoiceEmail, PaymentEvent, IdempotencyKey с tenant isolation
+     - ✅ API endpoint: `POST /api/refunds` с mandatory Idempotency-Key header
+     - ✅ Real provider integration: Live Stripe/PayPal SDK calls с graceful fallback
+     - ✅ Webhook processing: Stripe/PayPal refund events с deduplication system
+     - ✅ Event-driven architecture: Comprehensive PaymentEvent logging
+   - 📊 **Commits выполнены**:
+     - `feat(payment): add refunds API skeleton with idempotency`
+     - `feat(payment): implement Stripe/PayPal refunds with events`
+     - `feat(payment): handle refund webhooks (dedupe + status updates)`
+   - ⏳ **Следующий milestone**: Email delivery integration (Шаг 4/5)
+   - 📝 **GitHub обновлен**: Детальный progress update опубликован в Issue #17
+
 ---
-*Последнее обновление памяти: 22.09.2025 - AUTO-RESTORE СИСТЕМА ВОССТАНОВЛЕНА: исправлены пути после миграции проекта, все эндпоинты протестированы и работают корректно*
+---
+
+## 🎯 ЗАВЕРШЕННЫЕ ЗАДАЧИ (27.09.2025)
+
+### ✅ **Stage 3 Orchestra​tion Migration - ЗАВЕРШЕНО**
+
+**GitHub Issue #23** полностью реализован с следующими улучшениями:
+
+#### 1. ✅ **Unified Service Registry с новой схемой `run`**
+```typescript
+// Новая структура run configuration
+run: {
+  command: string;                    // 'pnpm', 'node', 'systemctl'
+  args: string[];                     // ['dev'], ['src/server.js']
+  cwd: string;                        // относительный путь от корня проекта
+  env?: Record<string, string>;       // дополнительные переменные среды
+  managed?: 'internal' | 'external'; // тип управления (default: 'internal')
+}
+```
+
+**Примеры конфигурации:**
+- `api-gateway` → `{ command: 'pnpm', args: ['dev'], cwd: 'services/api-gateway' }`
+- `auth-service` → `{ command: 'pnpm', args: ['dev'], cwd: 'services/auth-service', env: { MFA_MASTER_KEY: '...' } }`
+- `postgresql` → `{ command: '', args: [], cwd: '.', managed: 'external' }`
+
+#### 2. ✅ **ProcessManager с поддержкой новой схемы**
+- **PATH аугментация**: автоматическое добавление `/root/.local/share/pnpm` и других путей для корректной работы pnpm
+- **Working directory resolution**: использование `path.resolve(projectRoot, run.cwd)` для корректных путей
+- **Environment merging**: объединение `process.env`, `run.env` и PATH аугментации
+- **External service handling**: сервисы с `managed: 'external'` пропускаются при start/stop/restart
+
+#### 3. ✅ **API Updates с 501 responses**
+- **GET** `/orchestrator/status-all` включает поля `managed` и `cwd`
+- **POST** `/orchestrator/services/:id/actions` возвращает 501 для внешних сервисов
+- **Batch operations** корректно обрабатывают внешние сервисы
+- **External services** показывают статус `'external'` в API responses
+
+#### 4. ✅ **Comprehensive Unit Tests**
+- **ProcessManager тесты** с mock execa для проверки:
+  - Корректного разрешения working directory
+  - PATH аугментации для package managers
+  - Обработки внешних сервисов
+  - Environment variable merging
+- **Jest configuration** для TypeScript и мocking
+
+#### 5. ✅ **Решенные проблемы**
+- **ENOENT ошибки**: исправлены через PATH аугментацию
+- **systemctl ошибки**: внешние сервисы больше не управляются orchestrator
+- **Working directory**: корректное разрешение путей от project root
+- **Environment isolation**: правильная изоляция переменных среды по сервисам
+
+### ✅ **#25 Admin UI: New orchestrator monitoring dashboard**
+
+- Полностью переписали `ServicesMonitoringPage` под Orchestrator API (`/api/orchestrator/status-all`, `/api/orchestrator/registry`) с выводом состояния, warmup прогресса, circuit breaker и зависимостей.
+- Добавили управление сервисами прямо из админки (`start` / `stop` / `restart` / `resetCircuit`) с обработкой 409/501 и автоматическим обновлением статуса.
+- Реализовали просмотр логов (stdout/stderr, 200 строк) с вкладками, автообновлением и выбором сервиса.
+- ✅ **UI/UX улучшения** (27.09.2025):
+  - Удален legacy баннер "Legacy bash auto-restore disabled"
+  - Переключатель автообновления и кнопка "Refresh" перенесены в карточку "Оркестратор"
+  - Убрана подпись над таблицей сервисов для более чистого интерфейса
+  - Интегрированы элементы управления прямо в карточку с метриками оркестратора
+- Проверено: `pnpm --filter admin-panel build` (warning только про размер бандла).
+
+### 🔧 **Orchestrator DevOps Tools** (27.09.2025)
+
+#### ✅ **Issue #22 (частично): Unified service registry integration**
+- ✅ Создан скрипт автогенерации `services/api-gateway/scripts/generate-services.js`
+- ✅ Интегрирован `convertToLegacyGatewayConfig()` из `@beauty-platform/service-registry`
+- ✅ Добавлен npm script `generate:services` в API Gateway
+- ✅ Автогенерация при сборке: `npm run build` → `generate:services && tsc`
+- ✅ Убирает дублирование конфигурации между service-registry и API Gateway
+
+#### ✅ **Production-ready deployment scripts**
+- ✅ `scripts/start-orchestrator.sh` - управление оркестратором в фоне
+  - Команды: `start|stop|restart|status`
+  - PID файлы, логирование, graceful shutdown
+  - Health checks и проверка доступности
+- ✅ `scripts/orchestrator-status.sh` - мониторинг системы
+  - Цветная таблица статусов всех сервисов
+  - Warmup прогресс и circuit breaker состояния
+  - Флаги: `--json|--services|--warmup` для автоматизации
+
+## 🎯 ОСТАВШИЕСЯ ЗАДАЧИ
+
+### GitHub Issues от [Codex]:
+- **#22** Orchestrator: Unified service registry (статус GitHub — open, нужны финальные правки/закрытие)
+- **#26** Gateway: prune unused services (context7, backup)
+- **#27** Dev Orchestrator Migration — мастер-эпик (трекер прогресса)
+
+---
+
+*Последнее обновление памяти: 27.09.2025 — Закрыт Issue #25, обновлена информация по Dev Orchestrator*

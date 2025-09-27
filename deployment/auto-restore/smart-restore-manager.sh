@@ -177,16 +177,6 @@ check_service_status() {
         fi
     fi
 
-    # Специальная проверка для Context7 MCP Server
-    if [ "$service" == "context7" ]; then
-        if curl -sf --connect-timeout 3 "http://localhost:$port/ping" >/dev/null 2>&1; then
-            log_json "$service" "health_check" "success" "Context7 MCP Server responds to /ping"
-            return 0
-        else
-            log_json "$service" "health_check" "failed" "Context7 MCP Server not responding to /ping"
-            return 1
-        fi
-    fi
 
     # 1. Проверяем процесс на порту для всех остальных
     if ! lsof -i ":$port" -t >/dev/null 2>&1; then
@@ -444,7 +434,6 @@ SERVICES[images-api]="6026:/root/projects/beauty/services/images-api:PORT=6026 n
 SERVICES[crm-api]="6022:/root/projects/beauty/services/crm-api:npm run dev"
 SERVICES[backup-service]="6027:/root/projects/beauty/services/backup-service:PORT=6027 node dist/server.js"
 SERVICES[postgresql]="6100:/var/lib/postgresql/16/main:systemctl start postgresql"
-SERVICES[context7]="6024:/root/context7:bun run dist/index.js --transport http --port 6024"
 SERVICES[notification-service]="6028:/root/projects/beauty/services/notification-service:pnpm run dev"
 
 # Функция управления
