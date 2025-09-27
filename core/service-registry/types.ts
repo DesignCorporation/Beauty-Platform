@@ -40,11 +40,12 @@ export interface EnvironmentVariable {
  * Service runtime execution configuration
  */
 export interface ServiceRunConfig {
-  command: string;                    // Executable command (e.g., 'pnpm', 'node', 'systemctl')
-  args: string[];                     // Command arguments (e.g., ['dev'], ['src/server.js'])
-  cwd: string;                        // Working directory relative to project root
-  env?: Record<string, string>;       // Additional environment variables
-  managed?: 'internal' | 'external'; // Management type - default 'internal'
+  command: string;                     // Executable command (e.g., 'pnpm', 'node', 'systemctl')
+  args: string[];                      // Command arguments (e.g., ['dev'], ['src/server.js'])
+  cwd: string;                         // Working directory relative to project root
+  env?: Record<string, string>;        // Additional environment variables
+  managed?: 'internal' | 'external';   // Management type - default 'internal'
+  autoStart?: boolean;                // Should the orchestrator auto-start this service on init
 }
 
 export interface ServiceConfig {

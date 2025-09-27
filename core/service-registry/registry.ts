@@ -23,26 +23,25 @@ const services: Record<string, ServiceConfig> = {
     id: 'landing-page',
     name: 'Landing Page',
     description: 'SEO-optimized marketing landing page for beauty salons',
-    port: 6000,
+    port: 6004,
     directory: 'apps/landing-page', // deprecated - use run.cwd
-    startCommand: 'PORT=6000 pnpm dev', // deprecated - use run
+    startCommand: 'PORT=6004 pnpm dev', // deprecated - use run
     healthEndpoint: '/',
     run: {
       command: 'pnpm',
       args: ['dev'],
       cwd: 'apps/landing-page',
-      env: { PORT: '6000' },
+      env: { PORT: '6004' },
       managed: 'internal'
     },
     type: ServiceType.Frontend,
     criticality: ServiceCriticality.Optional,
-    status: ServiceStatus.Active,
+    status: ServiceStatus.Disabled, // Оставляем отключённым до отдельной задачи
     tags: ['ui', 'marketing', 'seo'],
     dependencies: ['api-gateway'],
     timeout: 30000,
     retries: 2,
     warmupTime: 10,
-    gatewayPath: undefined,
     requiredEnvVars: ['PORT'],
     optionalEnvVars: [
       { name: 'NODE_ENV', defaultValue: 'development', description: 'Application environment' },
@@ -76,7 +75,6 @@ const services: Record<string, ServiceConfig> = {
     timeout: 30000,
     retries: 3,
     warmupTime: 15,
-    gatewayPath: undefined,
     requiredEnvVars: ['VITE_API_URL'],
     optionalEnvVars: [
       { name: 'VITE_APP_NAME', defaultValue: 'Beauty Platform CRM', description: 'Application display name' },
@@ -109,7 +107,6 @@ const services: Record<string, ServiceConfig> = {
     timeout: 30000,
     retries: 3,
     warmupTime: 15,
-    gatewayPath: undefined,
     requiredEnvVars: [],
     optionalEnvVars: [
       { name: 'VITE_API_URL', defaultValue: 'http://localhost:6020', description: 'API Gateway URL' },
@@ -142,7 +139,6 @@ const services: Record<string, ServiceConfig> = {
     timeout: 30000,
     retries: 2,
     warmupTime: 10,
-    gatewayPath: undefined,
     requiredEnvVars: [],
     optionalEnvVars: [
       { name: 'VITE_API_URL', defaultValue: 'http://localhost:6020', description: 'API Gateway URL' },
@@ -176,7 +172,7 @@ const services: Record<string, ServiceConfig> = {
     timeout: 15000,
     retries: 3,
     warmupTime: 5,
-    gatewayPath: undefined, // Gateway itself
+    // Gateway itself
     publicEndpoints: ['/health', '/api/*', '/auth/*', '/mcp/*'],
     requiredEnvVars: [],
     optionalEnvVars: [
@@ -272,7 +268,8 @@ const services: Record<string, ServiceConfig> = {
       command: 'pnpm',
       args: ['dev'],
       cwd: 'services/mcp-server',
-      managed: 'internal'
+      managed: 'internal',
+      autoStart: true
     },
     type: ServiceType.AI,
     criticality: ServiceCriticality.Optional,
@@ -423,7 +420,6 @@ const services: Record<string, ServiceConfig> = {
     timeout: 10000,
     retries: 5,
     warmupTime: 30,
-    gatewayPath: undefined,
     requiredEnvVars: [],
     optionalEnvVars: [
       { name: 'POSTGRES_DB', defaultValue: 'beauty_platform_new', description: 'Database name' },
@@ -451,7 +447,7 @@ const services: Record<string, ServiceConfig> = {
     },
     type: ServiceType.Utility,
     criticality: ServiceCriticality.Optional,
-    status: ServiceStatus.Disabled, // Temporarily disabled during migration
+    status: ServiceStatus.Active,
     tags: ['backup', 'automation', 'database'],
     dependencies: ['postgresql'],
     timeout: 60000, // Backup operations can take time

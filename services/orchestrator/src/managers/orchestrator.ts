@@ -14,11 +14,13 @@ import {
 } from '../types/orchestrator.types';
 import {
   ServiceConfig,
+  ServiceCriticality,
+  calculateStartupOrder,
   getAllServices,
-  findServiceById,
   getCriticalServices,
+  findServiceById,
   isExternallyManaged
-} from '../../../../core/service-registry';
+} from '@beauty-platform/service-registry';
 import { ProcessManager } from './process-manager';
 import { StateManager } from './state-manager';
 
@@ -55,6 +57,9 @@ export class Orchestrator extends EventEmitter {
 
     // Restore previous state
     await this.restoreState();
+
+    // Auto-start configured services (critical + explicit autoStart flag)
+    await this.autoStartConfiguredServices();
 
     console.log('Orchestrator initialized successfully');
   }
@@ -255,25 +260,27 @@ export class Orchestrator extends EventEmitter {
     const allServices = getAllServices();
 
     for (const serviceConfig of allServices) {
+      const isExternal = isExternallyManaged(serviceConfig.id);
+
       const runtimeState: ServiceRuntimeState = {
         serviceId: serviceConfig.id,
-        state: ServiceState.STOPPED,
+        state: isExternal ? ServiceState.EXTERNAL : ServiceState.STOPPED,
         process: {},
         health: {
-          isHealthy: false,
+          isHealthy: isExternal ? true : false, // External services assumed healthy
           lastCheck: new Date(),
           consecutiveFailures: 0,
-          consecutiveSuccesses: 0
+          consecutiveSuccesses: isExternal ? 1 : 0 // External services start with success
         },
         circuitBreaker: {
           state: 'closed',
           failures: 0,
-          backoffSeconds: 1
+          backoffSeconds: isExternal ? 0 : 1 // No backoff for external services
         },
         warmup: {
           isInWarmup: false,
-          successfulChecks: 0,
-          requiredChecks: Math.ceil(serviceConfig.warmupTime / (this.config.healthCheck.interval / 1000))
+          successfulChecks: isExternal ? 1 : 0, // External services pre-warmed
+          requiredChecks: isExternal ? 1 : Math.ceil(serviceConfig.warmupTime / (this.config.healthCheck.interval / 1000))
         },
         autoRestoreAttempts: 0,
         lastStateChange: new Date(),
@@ -300,6 +307,13 @@ export class Orchestrator extends EventEmitter {
       const runtimeState = this.services.get(serviceId);
       if (!runtimeState) continue;
 
+      // Skip restoring state for external services - they should keep their initialized state
+      const isExternal = isExternallyManaged(serviceId);
+      if (isExternal) {
+        console.log(`Skipping state restoration for external service: ${serviceId}`);
+        continue;
+      }
+
       // Apply persisted state
       const partialState = this.stateManager.persistedToRuntime(persistedState, serviceId);
       Object.assign(runtimeState, partialState);
@@ -324,8 +338,17 @@ export class Orchestrator extends EventEmitter {
 
     for (const depId of runtimeState.dependencies) {
       const depState = this.services.get(depId);
-      if (!depState || depState.state !== ServiceState.RUNNING) {
-        throw new Error(`Dependency ${depId} is not running for service ${serviceId}`);
+      const isExternal = isExternallyManaged(depId);
+
+      // For external services, only check if they're marked as EXTERNAL (assume healthy)
+      // For internal services, check if they're RUNNING
+      const isReady = isExternal
+        ? (depState?.state === ServiceState.EXTERNAL)
+        : (depState?.state === ServiceState.RUNNING);
+
+      if (!depState || !isReady) {
+        const expectedState = isExternal ? 'external and healthy' : 'running';
+        throw new Error(`Dependency ${depId} is not ${expectedState} for service ${serviceId}`);
       }
     }
   }
@@ -370,6 +393,53 @@ export class Orchestrator extends EventEmitter {
       autoRestoreAttempts: isExternal ? 0 : runtimeState.autoRestoreAttempts,
       lastStateChange: runtimeState.lastStateChange.toISOString()
     };
+  }
+
+  /**
+   * Auto-start services based on registry configuration
+   */
+  private async autoStartConfiguredServices(): Promise<void> {
+    const startupOrder = calculateStartupOrder();
+
+    for (const { serviceId } of startupOrder) {
+      const serviceConfig = findServiceById(serviceId);
+      if (!serviceConfig) continue;
+
+      if (!this.shouldAutoStart(serviceConfig)) {
+        continue;
+      }
+
+      const runtimeState = this.services.get(serviceId);
+      if (!runtimeState) {
+        continue;
+      }
+
+      if ([ServiceState.RUNNING, ServiceState.STARTING, ServiceState.WARMUP].includes(runtimeState.state)) {
+        continue;
+      }
+
+      try {
+        await this.startService(serviceId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[AutoStart] Failed to start ${serviceId}: ${message}`);
+      }
+    }
+  }
+
+  /**
+   * Determine if a service should auto-start
+   */
+  private shouldAutoStart(serviceConfig: ServiceConfig): boolean {
+    if (serviceConfig.run?.managed === 'external') {
+      return false;
+    }
+
+    if (serviceConfig.run?.autoStart !== undefined) {
+      return serviceConfig.run.autoStart;
+    }
+
+    return serviceConfig.criticality === ServiceCriticality.Critical;
   }
 
   /**

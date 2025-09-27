@@ -39,15 +39,16 @@
 - Проверка подключённых MCP: `codex mcp list`. Чтобы перезапустить только мост: `cd services/codex-mcp && pnpm dev` (живой режим) или `pnpm start` для единичного запуска.
 - При обновлении памяти не забывай синхронизировать и `Codex.md`, и `CLAUDE.md` — мост подтянет изменения автоматически (кэш ~60 секунд).
 
-## Dev Orchestrator Migration (26.09.2025)
+## Dev Orchestrator Migration (27.09.2025)
 - Master issue: **#27 Dev Orchestrator Migration - Master Tracking**.
 - Активные подзадачи:
   - #21 Remove legacy bash auto-restore — стартовая задача (Stage 1: заглушки + чистка cron).
   - #22 Unified service registry — единый конфиг для gateway/orchestrator/UI.
-  - #23 Node.js process manager & auto-restore — новый сервис управления процессами.
-  - #24 REST API & health model — `/orchestrator/*` endpoints, critical vs optional.
-  - #25 Admin UI monitoring dashboard — обновление ServicesMonitoringPage.
   - #26 Gateway: prune unused services — отдельный фикс `/health` (должен быть закрыт первым).
+- Завершено:
+  - #23 Node.js process manager & auto-restore — новый сервис управления процессами (см. Stage 3 summary в `CLAUDE.md`).
+  - 26.09.2025 — #24 Orchestrator REST API & health model: реализованы эндпоинты `/orchestrator/status-all`, `/services/:id/actions`, `/logs` + прокси в Gateway, разделение critical/optional.
+  - 27.09.2025 — #25 Admin UI monitoring dashboard: обновили `apps/admin-panel/src/pages/ServicesMonitoringPage.tsx` под новый Orchestrator API, добавили кнопки `start/stop/restart/resetCircuit`, просмотр логов (stdout/stderr, 200 строк) и агрегированную сводку; проверено `pnpm --filter admin-panel build`.
 - Рабочий протокол:
   - Каждую завершённую подзадачу закрывать с комментарием (что сделано, где PR, какие проверки) и отмечать чекбокс в #27.
   - При обновлении памяти фиксировать статус Stage 1/Stage 2. Текущий статус: **Stage 1 (legacy bash отключаем)**.

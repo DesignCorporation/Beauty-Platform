@@ -108,12 +108,22 @@ export const healthChecker = new HealthChecker();
 
 export const healthRoute = async (req: Request, res: Response) => {
   const allHealth = healthChecker.getAllHealth();
-  const overallHealthy = Object.values(allHealth).every(h => h.status === 'healthy');
-  
-  res.status(overallHealthy ? 200 : 503).json({
-    status: overallHealthy ? 'healthy' : 'degraded',
+  const healthyServices = Object.values(allHealth).filter(h => h.status === 'healthy').length;
+  const totalServices = Object.values(allHealth).length;
+
+  // ВАЖНО: Gateway всегда возвращает 200 если сам живой (graceful degradation)
+  // Статус 'degraded' означает что некоторые сервисы недоступны, но gateway работает
+  const gatewayStatus = healthyServices === totalServices ? 'healthy' : 'degraded';
+
+  res.status(200).json({
+    status: gatewayStatus,
     timestamp: new Date().toISOString(),
     services: allHealth,
+    summary: {
+      healthy: healthyServices,
+      total: totalServices,
+      degraded: totalServices - healthyServices
+    },
     gateway: {
       status: 'healthy',
       uptime: process.uptime(),
@@ -126,10 +136,10 @@ export const healthRoute = async (req: Request, res: Response) => {
 export const readinessRoute = async (req: Request, res: Response) => {
   // Check if critical services are healthy
   const criticalServices = ['auth']; // Auth is critical for most operations
-  const criticalHealthy = criticalServices.every(service => 
+  const criticalHealthy = criticalServices.every(service =>
     healthChecker.isServiceHealthy(service)
   );
-  
+
   res.status(criticalHealthy ? 200 : 503).json({
     ready: criticalHealthy,
     timestamp: new Date().toISOString(),
@@ -138,4 +148,32 @@ export const readinessRoute = async (req: Request, res: Response) => {
       healthy: healthChecker.isServiceHealthy(service)
     }))
   });
+};
+
+// Новый endpoint для детального статуса сервисов (разделение метрик)
+export const servicesHealthRoute = async (req: Request, res: Response) => {
+  const allHealth = healthChecker.getAllHealth();
+  const serviceKey = req.params.service;
+
+  if (serviceKey) {
+    // Статус конкретного сервиса
+    const serviceHealth = healthChecker.getServiceHealth(serviceKey);
+    if (!serviceHealth) {
+      return res.status(404).json({
+        error: 'Service not found',
+        availableServices: Object.keys(allHealth)
+      });
+    }
+
+    return res.json({
+      serviceId: serviceKey,
+      ...serviceHealth
+    });
+  } else {
+    // Статус всех сервисов (только сервисы, без gateway метрик)
+    return res.json({
+      timestamp: new Date().toISOString(),
+      services: allHealth
+    });
+  }
 };

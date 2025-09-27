@@ -40,6 +40,7 @@ export interface ServiceRunConfig {
     cwd: string;
     env?: Record<string, string>;
     managed?: 'internal' | 'external';
+    autoStart?: boolean;
 }
 export interface ServiceConfig {
     id: string;

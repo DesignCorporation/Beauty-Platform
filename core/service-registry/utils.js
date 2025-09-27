@@ -6,6 +6,9 @@
  * @version 1.0.0
  * @created 26.09.2025
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findServiceById = findServiceById;
 exports.getAllServices = getAllServices;
@@ -32,6 +35,8 @@ exports.getServicesByCommand = getServicesByCommand;
 exports.isExternallyManaged = isExternallyManaged;
 exports.getServiceWorkingDirectory = getServiceWorkingDirectory;
 exports.buildServiceEnvironment = buildServiceEnvironment;
+const node_path_1 = __importDefault(require("node:path"));
+const node_process_1 = __importDefault(require("node:process"));
 const types_1 = require("./types");
 const registry_1 = require("./registry");
 /**
@@ -411,7 +416,7 @@ function isExternallyManaged(serviceId) {
  */
 function getServiceWorkingDirectory(service, projectRoot) {
     const cwd = service.run?.cwd || service.directory; // fallback to legacy directory
-    return require('path').resolve(projectRoot, cwd);
+    return node_path_1.default.resolve(projectRoot, cwd);
 }
 /**
  * Build environment for service execution
@@ -419,7 +424,7 @@ function getServiceWorkingDirectory(service, projectRoot) {
  * @param baseEnv - Base environment variables (usually process.env)
  * @returns Combined environment variables
  */
-function buildServiceEnvironment(service, baseEnv = process.env) {
+function buildServiceEnvironment(service, baseEnv = node_process_1.default.env) {
     return {
         ...baseEnv,
         ...service.run?.env,

@@ -6,18 +6,107 @@ import { healthChecker } from '../middleware/health';
 
 const router: Router = Router();
 
-// Custom error handler for proxy
-const handleProxyError = (serviceName: string) => (err: any, req: ProxyRequest, res: ProxyResponse) => {
+// Custom error handler for proxy с graceful degradation
+const handleProxyError = (serviceName: string, serviceKey: string) => (err: any, req: ProxyRequest, res: ProxyResponse) => {
   console.error(`Proxy error for ${serviceName}:`, err.message);
-  
+
   if (!res.headersSent) {
-    res.status(503).json({
-      error: 'Service Unavailable',
-      message: `${serviceName} is currently unavailable`,
+    // Проверяем статус сервиса для более точного ответа
+    const serviceHealth = healthChecker.getServiceHealth(serviceKey);
+    const isHealthy = serviceHealth?.status === 'healthy';
+
+    // Умные fallback responses в зависимости от типа сервиса
+    const fallbackResponse = generateFallbackResponse(serviceKey, serviceName, req.path, isHealthy);
+
+    res.status(fallbackResponse.status).json({
+      ...fallbackResponse.body,
       timestamp: new Date().toISOString(),
       requestId: req.headers['x-request-id'] || 'unknown'
     });
   }
+};
+
+// Генерация умных fallback responses
+const generateFallbackResponse = (serviceKey: string, serviceName: string, path: string, isHealthy: boolean) => {
+  const baseError = {
+    error: 'Service Temporarily Unavailable',
+    service: serviceName,
+    degraded: true
+  };
+
+  // Специальные fallback для разных сервисов
+  switch (serviceKey) {
+    case 'notification-service':
+      if (path.includes('/notifications')) {
+        return {
+          status: 200, // Graceful degradation для уведомлений
+          body: {
+            ...baseError,
+            message: 'Notifications service is temporarily unavailable. Your action was completed but notifications may be delayed.',
+            fallback: {
+              notifications: [],
+              unreadCount: 0,
+              status: 'degraded'
+            }
+          }
+        };
+      }
+      break;
+
+    case 'images-api':
+      if (path.includes('/images')) {
+        return {
+          status: 200, // Graceful degradation для изображений
+          body: {
+            ...baseError,
+            message: 'Image service is temporarily unavailable. Please try uploading again later.',
+            fallback: {
+              placeholder: '/assets/placeholder-image.png',
+              status: 'degraded'
+            }
+          }
+        };
+      }
+      break;
+
+    case 'payment-service':
+      return {
+        status: 503, // Payments - критический сервис
+        body: {
+          ...baseError,
+          message: 'Payment service is temporarily unavailable. Please try again in a few moments.',
+          critical: true
+        }
+      };
+
+    case 'auth-service':
+      return {
+        status: 503, // Auth - критический сервис
+        body: {
+          ...baseError,
+          message: 'Authentication service is temporarily unavailable. Please try again in a few moments.',
+          critical: true
+        }
+      };
+
+    default:
+      return {
+        status: 503,
+        body: {
+          ...baseError,
+          message: `${serviceName} is currently unavailable. Please try again later.`
+        }
+      };
+  }
+
+  // Default fallback
+  return {
+    status: 503,
+    body: {
+      ...baseError,
+      message: `${serviceName} is currently unavailable. Please try again later.`
+    }
+  };
 };
 
 // Custom request handler to add headers and check service health
@@ -180,7 +269,7 @@ Object.entries(SERVICES).forEach(([serviceKey, serviceConfig]) => {
     // Убрали buffer: true - конфликтует с pipe
     
     pathRewrite,
-    onError: handleProxyError(serviceConfig.name),
+    onError: handleProxyError(serviceConfig.name, serviceKey),
     onProxyReq: handleProxyRequest(serviceConfig.name), 
     onProxyRes: handleProxyResponse(serviceConfig.name),
     logLevel: (process.env.NODE_ENV === 'development' ? 'debug' : 'warn') as 'debug' | 'warn'

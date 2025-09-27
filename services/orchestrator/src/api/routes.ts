@@ -9,7 +9,7 @@ import { Orchestrator } from '../managers/orchestrator';
 import { ServiceActionSchema, ServiceAction } from '../types/orchestrator.types';
 import { isExternallyManaged } from '../../../../core/service-registry';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * Validation middleware

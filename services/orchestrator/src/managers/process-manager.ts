@@ -18,7 +18,7 @@ import {
   isExternallyManaged,
   getServiceWorkingDirectory,
   buildServiceEnvironment
-} from '../../../../core/service-registry';
+} from '@beauty-platform/service-registry';
 import * as path from 'path';
 
 export class ProcessManager extends EventEmitter {
@@ -62,12 +62,27 @@ export class ProcessManager extends EventEmitter {
       this.emit('stateChange', serviceId, runtimeState);
 
       // Get command and args from run config
-      const { command, args } = run;
+      let { command, args } = run;
+
+      // Replace 'pnpm' command with full path if needed
+      if (command === 'pnpm') {
+        const pnpmPath = this.findPnpmExecutable();
+        if (pnpmPath) {
+          command = pnpmPath;
+          console.log(`[PNPM] Using full path: ${command}`);
+        }
+      }
 
       // Get working directory and environment
-      const projectRoot = process.cwd(); // Orchestrator runs from project root
+      const projectRoot = path.resolve(process.cwd(), '../..'); // Go up from services/orchestrator to project root
       const workingDirectory = getServiceWorkingDirectory(serviceConfig, projectRoot);
       const serviceEnvironment = buildServiceEnvironment(serviceConfig, process.env);
+
+      // Debug logging
+      console.log(`[DEBUG] Service: ${serviceId}`);
+      console.log(`[DEBUG] Project Root: ${projectRoot}`);
+      console.log(`[DEBUG] Working Directory: ${workingDirectory}`);
+      console.log(`[DEBUG] Command: ${command} ${args.join(' ')}`);
 
       // Augment PATH for package managers like pnpm
       const augmentedPath = this.augmentPathForPackageManagers(process.env.PATH || '');
@@ -272,29 +287,95 @@ export class ProcessManager extends EventEmitter {
   }
 
   /**
+   * Find pnpm executable path
+   */
+  private findPnpmExecutable(): string | null {
+    // Try locations in order of preference
+    const possiblePaths = [
+      // 1. PNPM_HOME (recommended)
+      process.env.PNPM_HOME ? path.join(process.env.PNPM_HOME, 'pnpm') : null,
+      // 2. System locations
+      '/usr/local/bin/pnpm',
+      '/usr/bin/pnpm',
+      // 3. Our symlink as fallback
+      '/root/bin/pnpm'
+    ].filter(Boolean);
+
+    for (const pnpmPath of possiblePaths) {
+      try {
+        require('fs').accessSync(pnpmPath, require('fs').constants.X_OK);
+        console.log(`[PNPM] Found executable: ${pnpmPath}`);
+        return pnpmPath;
+      } catch (error) {
+        // File doesn't exist or not executable, try next
+        continue;
+      }
+    }
+
+    // Last resort: try to detect via which
+    try {
+      const result = execa.sync('which', ['pnpm'], { encoding: 'utf8' });
+      if (result.stdout) {
+        const detectedPath = result.stdout.trim();
+        console.log(`[PNPM] Detected via which: ${detectedPath}`);
+        return detectedPath;
+      }
+    } catch (error) {
+      // which command failed
+    }
+
+    console.log(`[PNPM] No executable found, falling back to 'pnpm' command`);
+    return null;
+  }
+
+  /**
    * Augment PATH environment variable for package managers
    * Adds common locations for pnpm, npm, yarn etc.
    */
   private augmentPathForPackageManagers(currentPath: string): string {
+    // Detect pnpm directory
+    let pnpmPath = process.env.PNPM_HOME;
+
+    console.log(`[PATH DEBUG] PNPM_HOME from env: ${pnpmPath}`);
+
+    if (!pnpmPath) {
+      // Fallback: try to detect pnpm location
+      try {
+        const result = execa.sync('which', ['pnpm'], { encoding: 'utf8' });
+        if (result.stdout) {
+          pnpmPath = path.dirname(result.stdout.trim());
+          console.log(`[PATH DEBUG] pnpm detected via which: ${pnpmPath}`);
+        }
+      } catch (error) {
+        // Last fallback: common pnpm location
+        pnpmPath = '/root/.local/share/pnpm';
+        console.log(`[PATH DEBUG] using fallback path: ${pnpmPath}`);
+      }
+    }
+
     const additionalPaths = [
-      '/root/.local/share/pnpm',           // pnpm global install location
-      '/usr/local/bin',                    // common binary location
-      '/usr/bin',                          // system binaries
-      '/bin',                              // core system binaries
+      pnpmPath,                             // pnpm directory (dynamic detection)
+      '/usr/local/bin',                     // common binary location
+      '/usr/bin',                           // system binaries
+      '/bin',                               // core system binaries
       path.join(process.env.HOME || '/root', '.local/bin'), // user local binaries
-      '/opt/node/bin'                      // Node.js install location
-    ];
+      '/opt/node/bin'                       // Node.js install location
+    ].filter(Boolean); // Remove any undefined paths
 
     const pathSegments = currentPath.split(':').filter(Boolean);
 
-    // Add missing paths
+    // Add missing paths (prioritize pnpm path)
     for (const additionalPath of additionalPaths) {
       if (!pathSegments.includes(additionalPath)) {
         pathSegments.unshift(additionalPath);
       }
     }
 
-    return pathSegments.join(':');
+    const finalPath = pathSegments.join(':');
+    console.log(`[PATH DEBUG] Original PATH: ${currentPath}`);
+    console.log(`[PATH DEBUG] Augmented PATH: ${finalPath}`);
+
+    return finalPath;
   }
 
   /**

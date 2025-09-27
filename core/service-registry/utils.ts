@@ -6,6 +6,9 @@
  * @created 26.09.2025
  */
 
+import path from 'node:path';
+import process from 'node:process';
+
 import {
   ServiceConfig,
   ServiceType,
@@ -444,7 +447,7 @@ export function isExternallyManaged(serviceId: string): boolean {
  */
 export function getServiceWorkingDirectory(service: ServiceConfig, projectRoot: string): string {
   const cwd = service.run?.cwd || service.directory; // fallback to legacy directory
-  return require('path').resolve(projectRoot, cwd);
+  return path.resolve(projectRoot, cwd);
 }
 
 /**
@@ -453,11 +456,14 @@ export function getServiceWorkingDirectory(service: ServiceConfig, projectRoot: 
  * @param baseEnv - Base environment variables (usually process.env)
  * @returns Combined environment variables
  */
-export function buildServiceEnvironment(service: ServiceConfig, baseEnv: NodeJS.ProcessEnv = process.env): Record<string, string> {
+export function buildServiceEnvironment(
+  service: ServiceConfig,
+  baseEnv: Record<string, string | undefined> = process.env
+): Record<string, string> {
   return {
     ...baseEnv,
     ...service.run?.env,
     // Ensure PORT is set
     PORT: service.port.toString()
-  };
+  } as Record<string, string>;
 }
